@@ -4,5 +4,5 @@ import "fmt"
 
 func main() {
 	fmt.Println("Email Dispatcher using GoLang Backend!!!")
-
+	loadRecipients("./mail.csv")
 }

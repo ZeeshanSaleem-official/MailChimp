@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/csv"
+	"fmt"
 	"os"
 )
 
@@ -16,4 +17,8 @@ func loadRecipients(filePath string) error {
 	if err != nil {
 		return err
 	}
+	for _, record := range records[1:] {
+		fmt.Println(record)
+	}
+	return nil
 }
