@@ -6,8 +6,7 @@ import (
 	"os"
 )
 
-func loadRecipients(filePath string) error {
-	// we will use the channels and much more
+func loadRecipients(filePath string, ch chan Recipient) error {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return err
