@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type Recipient struct {
 	Name  string
@@ -10,6 +13,10 @@ type Recipient struct {
 func main() {
 	fmt.Println("Email Dispatcher using GoLang Backend!!!")
 	recipientchannel := make(chan Recipient)
-	loadRecipients("./mail.csv", recipientchannel)
+	go func() {
+		loadRecipients("./mail.csv", recipientchannel)
+	}()
+	go emailWorker(1, recipientchannel)
 
+	time.Sleep(3 * time.Second)
 }
