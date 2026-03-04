@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"time"
+	"sync"
 )
 
 type Recipient struct {
@@ -17,11 +17,10 @@ func main() {
 		loadRecipients("./mail.csv", recipientchannel)
 	}()
 	workerCount := 5
-	go func() {
-		for i := 0; i <= workerCount; i++ {
-			emailWorker(i, recipientchannel)
-		}
-	}()
-
-	time.Sleep(3 * time.Second)
+	var wg sync.WaitGroup
+	for i := 0; i <= workerCount; i++ {
+		wg.Add(1)
+		go emailWorker(i, recipientchannel, &wg)
+	}
+	wg.Wait()
 }

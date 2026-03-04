@@ -6,6 +6,7 @@ import (
 )
 
 func loadRecipients(filePath string, ch chan Recipient) error {
+	defer close(ch)
 	f, err := os.Open(filePath)
 	if err != nil {
 		return err
