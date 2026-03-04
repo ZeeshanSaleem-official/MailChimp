@@ -16,7 +16,12 @@ func main() {
 	go func() {
 		loadRecipients("./mail.csv", recipientchannel)
 	}()
-	go emailWorker(1, recipientchannel)
+	workerCount := 5
+	go func() {
+		for i := 0; i <= workerCount; i++ {
+			emailWorker(i, recipientchannel)
+		}
+	}()
 
 	time.Sleep(3 * time.Second)
 }
