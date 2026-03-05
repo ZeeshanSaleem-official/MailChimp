@@ -14,10 +14,17 @@ func emailWorker(id int, ch chan Recipient, wg *sync.WaitGroup) {
 		smtpHost := "localhost"
 		smtpPort := "1025"
 
-		formattedMsg := fmt.Sprintf("To: %s\r\nSubject: Test Email\r\n\r\n%s\r\n", recipient.Email, "Just Testing email")
-		msg := []byte(formattedMsg)
+		// formattedMsg := fmt.Sprintf("To: %s\r\nSubject: Test Email\r\n\r\n%s\r\n", recipient.Email, "Just Testing email")
+		// msg := []byte(formattedMsg)
+
+		msg, err := executeEmail(recipient)
+		if err != nil {
+			fmt.Printf("Worker: %d Error during pasing template for %s", id, recipient.Email)
+			continue
+		}
+
 		fmt.Printf("Worker: %d: Sending email to: %s \r\n", id, recipient.Email)
-		err := smtp.SendMail(smtpHost+":"+smtpPort, nil, "zeeshan@gmail.com", []string{recipient.Email}, msg)
+		err = smtp.SendMail(smtpHost+":"+smtpPort, nil, "zeeshan@gmail.com", []string{recipient.Email}, []byte(msg))
 		if err != nil {
 			log.Fatal(err)
 		}
