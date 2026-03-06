@@ -20,7 +20,7 @@ func main() {
 	}()
 	workerCount := 5
 	var wg sync.WaitGroup
-	for i := 0; i <= workerCount; i++ {
+	for i := 1; i <= workerCount; i++ {
 		wg.Add(1)
 		go emailWorker(i, recipientchannel, &wg)
 	}

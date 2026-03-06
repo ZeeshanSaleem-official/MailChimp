@@ -11,12 +11,12 @@ func loadRecipients(filePath string, ch chan Recipient) error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 	Reader := csv.NewReader(f)
 	records, err := Reader.ReadAll()
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 	// Reading from channel
 	for _, record := range records[1:] {
 		ch <- Recipient{
