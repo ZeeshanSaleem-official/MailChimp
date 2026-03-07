@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"html/template"
 	"sync"
+
+	"github.com/ZeeshanSaleem-official/MailChimp/internal/config"
 )
 
 type Recipient struct {
@@ -14,6 +16,8 @@ type Recipient struct {
 
 func main() {
 	fmt.Println("Email Dispatcher using GoLang Backend!!!")
+	cfg := config.MustLoad("local.yml")
+	fmt.Printf("loaded Config for Environment %s\n", cfg.Env)
 	recipientchannel := make(chan Recipient)
 	go func() {
 		loadRecipients("./mail.csv", recipientchannel)
