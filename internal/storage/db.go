@@ -1,9 +1,11 @@
-package main
+package storage
 
 import (
 	"database/sql"
 	"fmt"
 	"log"
+
+	_ "github.com/lib/pq"
 )
 
 func InitDB(connSTr string) (*sql.DB, error) {

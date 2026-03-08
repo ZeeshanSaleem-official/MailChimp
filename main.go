@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"log"
 	"sync"
 
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/config"
+	"github.com/ZeeshanSaleem-official/MailChimp/internal/storage"
 )
 
 type Recipient struct {
@@ -18,9 +20,15 @@ func main() {
 	fmt.Println("Email Dispatcher using GoLang Backend!!!")
 	cfg := config.MustLoad("local.yml")
 	fmt.Printf("loaded Config for Environment %s\n", cfg.Env)
+	db, err := storage.InitDB(cfg.StoragePath)
+	if err != nil {
+		log.Fatalf("Fatal DB Error: %v", err)
+	}
+	defer db.Close()
 	recipientchannel := make(chan Recipient)
 	go func() {
-		loadRecipients("./mail.csv", recipientchannel)
+		importCSVtoDB("./mail.csv", db)
+		fetchRecipientsFromDB(recipientchannel, db)
 	}()
 	workerCount := 5
 	var wg sync.WaitGroup

@@ -1,12 +1,14 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/csv"
+	"fmt"
 	"os"
 )
 
-func loadRecipients(filePath string, ch chan Recipient) error {
-	defer close(ch)
+func importCSVtoDB(filePath string, db *sql.DB) error {
+	// Read from CSV
 	f, err := os.Open(filePath)
 	if err != nil {
 		return err
@@ -17,12 +19,43 @@ func loadRecipients(filePath string, ch chan Recipient) error {
 	if err != nil {
 		return err
 	}
-	// Reading from channel
+	// Insert into the Database
+	query := `INSERT INTO recipients (name, email) VALUES ($1, $2) ON CONFLICT (email) DO NOTHING;`
+
 	for _, record := range records[1:] {
-		ch <- Recipient{
-			Name:  record[0],
-			Email: record[1],
+		_, err = db.Exec(query, record[0], record[1])
+		if err != nil {
+			return err
 		}
 	}
+	fmt.Printf("All emails are added to Database successfully!!\r\n")
+	return nil
+}
+func fetchRecipientsFromDB(ch chan Recipient, db *sql.DB) error {
+	defer close(ch)
+
+	qurey := "SELECT email, name FROM recipients"
+
+	// Reading from channel
+	row, err := db.Query(qurey)
+	if err != nil {
+		return err
+	}
+	for row.Next() {
+		var email string
+		var name string
+
+		err = row.Scan(&email, &name)
+		if err != nil {
+			fmt.Printf("Error scanning row: %v\n", err)
+			continue
+		}
+		//Send through channel
+		ch <- Recipient{
+			Name:  name,
+			Email: email,
+		}
+	}
+	fmt.Printf("All emails are sent successfully!!\r\n")
 	return nil
 }
