@@ -55,7 +55,7 @@ func main() {
 	wg.Wait()
 }
 
-func executeEmail(r Recipient, templateName string) (string, error) {
+func executeEmail(r EmailData, templateName string) (string, error) {
 
 	t, err := template.ParseFiles(templateName)
 	if err != nil {
