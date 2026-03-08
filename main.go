@@ -15,8 +15,24 @@ type Recipient struct {
 	Name  string
 	Email string
 }
+type EmailData struct {
+	User Recipient
+	Camp Campaign
+}
+type Campaign struct {
+	Name          string
+	Subject       string
+	TemplateFile  string
+	TargetSegment string
+}
 
 func main() {
+	myCampaign := Campaign{
+		Name:          "Spring Sale 2026",
+		Subject:       "Exclusive 50 percent off for Premium Members!",
+		TemplateFile:  "promo.tmpl",
+		TargetSegment: "premium",
+	}
 	fmt.Println("Email Dispatcher using GoLang Backend!!!")
 	cfg := config.MustLoad("local.yml")
 	fmt.Printf("loaded Config for Environment %s\n", cfg.Env)
@@ -34,13 +50,14 @@ func main() {
 	var wg sync.WaitGroup
 	for i := 1; i <= workerCount; i++ {
 		wg.Add(1)
-		go emailWorker(i, recipientchannel, &wg)
+		go emailWorker(i, recipientchannel, &wg, myCampaign)
 	}
 	wg.Wait()
 }
 
-func executeEmail(r Recipient) (string, error) {
-	t, err := template.ParseFiles("email.tmpl")
+func executeEmail(r Recipient, templateName string) (string, error) {
+
+	t, err := template.ParseFiles(templateName)
 	if err != nil {
 		return "", err
 	}
