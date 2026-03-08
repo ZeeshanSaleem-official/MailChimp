@@ -28,7 +28,7 @@ func main() {
 	recipientchannel := make(chan Recipient)
 	go func() {
 		importCSVtoDB("./mail.csv", db)
-		fetchRecipientsFromDB(recipientchannel, db)
+		fetchRecipientsFromDB(recipientchannel, db, "premium")
 	}()
 	workerCount := 5
 	var wg sync.WaitGroup

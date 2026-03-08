@@ -31,13 +31,13 @@ func importCSVtoDB(filePath string, db *sql.DB) error {
 	fmt.Printf("All emails are added to Database successfully!!\r\n")
 	return nil
 }
-func fetchRecipientsFromDB(ch chan Recipient, db *sql.DB) error {
+func fetchRecipientsFromDB(ch chan Recipient, db *sql.DB, seg string) error {
 	defer close(ch)
 
-	qurey := "SELECT email, name FROM recipients"
+	query := "SELECT email, name FROM recipients WHERE segment = $1"
 
 	// Reading from channel
-	row, err := db.Query(qurey)
+	row, err := db.Query(query, seg)
 	if err != nil {
 		return err
 	}
@@ -50,6 +50,8 @@ func fetchRecipientsFromDB(ch chan Recipient, db *sql.DB) error {
 			fmt.Printf("Error scanning row: %v\n", err)
 			continue
 		}
+		fmt.Printf("Email: %s\r Name:%s\r", email, name)
+		defer row.Close()
 		//Send through channel
 		ch <- Recipient{
 			Name:  name,
