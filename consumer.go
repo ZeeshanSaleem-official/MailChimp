@@ -22,7 +22,7 @@ func emailWorker(id int, ch chan Recipient, wg *sync.WaitGroup, camp Campaign) {
 		}
 		msg, err := executeEmail(dataForTemplate, camp.TemplateFile)
 		if err != nil {
-			fmt.Printf("Worker: %d Error during pasing template for %s", id, recipient.Email)
+			fmt.Printf("Worker: %d Error executing template for %s: %v\n", id, recipient.Email, err)
 			continue
 		}
 
