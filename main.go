@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"database/sql"
 	"fmt"
 	"html/template"
 	"log"
@@ -50,7 +51,7 @@ func main() {
 	var wg sync.WaitGroup
 	for i := 1; i <= workerCount; i++ {
 		wg.Add(1)
-		go emailWorker(i, recipientchannel, &wg, myCampaign)
+		go emailWorker(i, recipientchannel, &wg, myCampaign, db)
 	}
 	wg.Wait()
 }
@@ -67,4 +68,12 @@ func executeEmail(r EmailData, templateName string) (string, error) {
 		return "", err
 	}
 	return tpl.String(), nil
+}
+func UpdateEmailStatus(db *sql.DB, email string, status string) error {
+	query := `UPDATE recipients SET status=$1 WHERE email=$2`
+	_, err := db.Exec(query, status, email)
+	if err != nil {
+		return err
+	}
+	return nil
 }
