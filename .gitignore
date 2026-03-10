@@ -1,0 +1,22 @@
+# 1. Local Configuration and Secrets (DO NOT COMMIT!)
+local.yaml
+local.yml
+*.env
+
+# 2. Binaries (Don't commit compiled code)
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+MailChimp.exe
+
+# 3. Test binaries and coverage
+*.test
+*.out
+
+# 4. IDE and OS specific files
+.vscode/
+.idea/
+.DS_Store
