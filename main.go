@@ -42,20 +42,25 @@ func main() {
 		log.Fatalf("Fatal DB Error: %v", err)
 	}
 	defer db.Close()
+	importCSVtoDB("./mail.csv", db)
+	runCampagin(db, myCampaign)
+}
+
+func runCampagin(db *sql.DB, camp Campaign) {
+
 	recipientchannel := make(chan Recipient)
 	go func() {
-		importCSVtoDB("./mail.csv", db)
 		fetchRecipientsFromDB(recipientchannel, db, "premium")
 	}()
 	workerCount := 5
 	var wg sync.WaitGroup
 	for i := 1; i <= workerCount; i++ {
 		wg.Add(1)
-		go emailWorker(i, recipientchannel, &wg, myCampaign, db)
+		go emailWorker(i, recipientchannel, &wg, camp, db)
 	}
 	wg.Wait()
-}
 
+}
 func executeEmail(r EmailData, templateName string) (string, error) {
 
 	t, err := template.ParseFiles(templateName)
