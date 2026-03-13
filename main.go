@@ -7,9 +7,11 @@ import (
 	"html/template"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/config"
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/storage"
+	"github.com/go-co-op/gocron"
 )
 
 type Recipient struct {
@@ -43,7 +45,16 @@ func main() {
 	}
 	defer db.Close()
 	importCSVtoDB("./mail.csv", db)
-	runCampagin(db, myCampaign)
+
+	s := gocron.NewScheduler(time.Local)
+	s.Every(1).Minute().Do(func() {
+		fmt.Printf("\n [%v] Scheduled Task Triggered: Starting Campaign '%s'...\n", time.Now().Format("15:04:05"), myCampaign.Name)
+		runCampagin(db, myCampaign)
+		fmt.Println(" Campaign execution finished. Waiting for next schedule...")
+	})
+	fmt.Println(" Scheduler started! Waiting for the next scheduled run...")
+	s.StartBlocking()
+
 }
 
 func runCampagin(db *sql.DB, camp Campaign) {
