@@ -3,9 +3,11 @@ package main
 import (
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
+	"net/http"
 	"sync"
 	"time"
 
@@ -27,6 +29,13 @@ type Campaign struct {
 	Subject       string
 	TemplateFile  string
 	TargetSegment string
+}
+type RecipientAPI struct {
+	ID      int    `json:"id"`
+	Name    string `json:"name"`
+	Email   string `json:"email"`
+	Segment string `json:"segment"`
+	Status  string `json:"status"`
 }
 
 func main() {
@@ -53,7 +62,14 @@ func main() {
 		fmt.Println(" Campaign execution finished. Waiting for next schedule...")
 	})
 	fmt.Println(" Scheduler started! Waiting for the next scheduled run...")
-	s.StartBlocking()
+	s.StartAsync()
+
+	//routes
+
+	http.HandleFunc("/api/recipients", getRecipientHandler(db))
+	fmt.Println(" Web Server is running on http://localhost:8080")
+	fmt.Println(" Scheduler is running in the background...")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 
 }
 
@@ -62,7 +78,7 @@ func runCampaign(db *sql.DB, camp Campaign) {
 
 	recipientchannel := make(chan Recipient)
 	go func() {
-		fetchRecipientsFromDB(recipientchannel, db, "premium")
+		fetchRecipientsFromDB(recipientchannel, db, camp.TargetSegment)
 	}()
 	workerCount := 5
 	var wg sync.WaitGroup
@@ -96,4 +112,33 @@ func UpdateEmailStatus(db *sql.DB, email string, status string) error {
 		return err
 	}
 	return nil
+}
+
+// Fetch data from db to show into frontend
+func getRecipientHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Content-Type", "application/json")
+		query := "SELECT id, name, email, segment, status FROM recipients ORDER BY id ASC"
+		rows, err := db.Query(query)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		var users []RecipientAPI
+		for rows.Next() {
+			var u RecipientAPI
+			err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.Segment, &u.Status)
+			if err != nil {
+				continue
+			}
+			users = append(users, u)
+		}
+		err = json.NewEncoder(w).Encode(users)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}
 }
