@@ -45,11 +45,11 @@ func main() {
 	}
 	defer db.Close()
 	importCSVtoDB("./mail.csv", db)
-
+	// Run campaign at some schedule
 	s := gocron.NewScheduler(time.Local)
 	s.Every(1).Minute().Do(func() {
 		fmt.Printf("\n [%v] Scheduled Task Triggered: Starting Campaign '%s'...\n", time.Now().Format("15:04:05"), myCampaign.Name)
-		runCampagin(db, myCampaign)
+		runCampaign(db, myCampaign)
 		fmt.Println(" Campaign execution finished. Waiting for next schedule...")
 	})
 	fmt.Println(" Scheduler started! Waiting for the next scheduled run...")
@@ -57,7 +57,8 @@ func main() {
 
 }
 
-func runCampagin(db *sql.DB, camp Campaign) {
+// Run campaign dynamically
+func runCampaign(db *sql.DB, camp Campaign) {
 
 	recipientchannel := make(chan Recipient)
 	go func() {
@@ -72,8 +73,9 @@ func runCampagin(db *sql.DB, camp Campaign) {
 	wg.Wait()
 
 }
-func executeEmail(r EmailData, templateName string) (string, error) {
 
+// execute the template for email
+func executeEmail(r EmailData, templateName string) (string, error) {
 	t, err := template.ParseFiles(templateName)
 	if err != nil {
 		return "", err
@@ -85,6 +87,8 @@ func executeEmail(r EmailData, templateName string) (string, error) {
 	}
 	return tpl.String(), nil
 }
+
+// Update the email status after send or failure
 func UpdateEmailStatus(db *sql.DB, email string, status string) error {
 	query := `UPDATE recipients SET status=$1 WHERE email=$2`
 	_, err := db.Exec(query, status, email)

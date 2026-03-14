@@ -31,6 +31,8 @@ func importCSVtoDB(filePath string, db *sql.DB) error {
 	fmt.Printf("All emails are added to Database successfully!!\r\n")
 	return nil
 }
+
+// fetch all recipients from email
 func fetchRecipientsFromDB(ch chan Recipient, db *sql.DB, seg string) error {
 	defer close(ch)
 
