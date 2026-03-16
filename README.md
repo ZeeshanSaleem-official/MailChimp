@@ -1,10 +1,10 @@
-# GoLang Email Dispatcher (MailChimp Engine) 🚀
+# GoLang Email Dispatcher (MailChimp Engine) 
 
 A robust, enterprise-grade email dispatcher system built with Go (Golang) and React. This project demonstrates advanced backend architecture, concurrency, and full-stack integration.
 
 Developed by **Zeeshan Saleem** (L1F22BSSE0031) as part of a BSSE software engineering initiative.
 
-## 🌟 Features
+##  Features
 
 - **Concurrent Workers:** Utilizes Go's powerful Goroutines and Channels to process and send emails concurrently, ensuring high performance.
 - **Persistent Storage:** Integrated with PostgreSQL to safely store recipient data, preventing duplicate sends and tracking state.
@@ -14,7 +14,7 @@ Developed by **Zeeshan Saleem** (L1F22BSSE0031) as part of a BSSE software engin
 - **Background Scheduling:** Uses `gocron` to run automated, scheduled campaigns in the background without blocking the main server.
 - **REST API & React Dashboard:** Serves real-time campaign statistics and user statuses to a modern React frontend via JSON.
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 - **Backend:** Go (Golang)
 - **Database:** PostgreSQL (with `database/sql` & `pq` driver)
@@ -23,7 +23,7 @@ Developed by **Zeeshan Saleem** (L1F22BSSE0031) as part of a BSSE software engin
 - **Configuration:** YAML (`koanf` / `viper`)
 - **Task Scheduling:** `gocron`
 
-## 🚀 How to Run (Local Environment)
+##  How to Run (Local Environment)
 
 ### 1. Prerequisites
 
