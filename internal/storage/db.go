@@ -32,6 +32,6 @@ func InitDB(connSTr string) (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create table: %v", err)
 	}
-	log.Println("✅ Schema initialized.")
+	log.Println("Schema initialized.")
 	return db, nil
 }
