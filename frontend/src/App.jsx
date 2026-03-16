@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 
 function App() {
@@ -25,6 +25,19 @@ function App() {
       setLoading(false)
     }
   }
+  // Run immediately on load, and then every 3 seconds to get live updates
+  useEffect(()=>{
+    fetchRecipients();
+    const interval = setInterval(fetchRecipients,3000)
+    // cleanup on unmount
+    return ()=> clearInterval(interval)
+  })
+  // Calculating the dynamic live stats from database data
+  const stats = {
+    total: recipients.length,
+    sent: recipients.filter(r =>r.status === "sent").length,
+    pending: recipients.filter(r=>r.status === "pending").length,
+    failed: recipients.filter(r=>r.status==="failed").length
+  }
 }
-
 export default App
