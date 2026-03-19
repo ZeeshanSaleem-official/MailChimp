@@ -142,3 +142,47 @@ func getRecipientHandler(db *sql.DB) http.HandlerFunc {
 		}
 	}
 }
+
+// Get data from UI and than trigger the emails
+func runCampaignHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		if r.Method != http.MethodPost {
+			http.Error(w, "The Methods should be a POST", http.StatusMethodNotAllowed)
+			return
+		}
+		//Decoding the body payload by React to Compaign
+		var newCampaign Campaign
+		err := json.NewDecoder(r.Body).Decode(&newCampaign)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		// if the template file is set to empty
+		if newCampaign.TemplateFile == "" {
+			newCampaign.TemplateFile = "promo.tmpl"
+		}
+		go func() {
+			fmt.Printf("\n manual campaign triggered via API: %s, targeting the segment: %s\n ", newCampaign.Name, newCampaign.TargetSegment)
+			runCampaign(db, newCampaign)
+			fmt.Println(" Manual Campaign execution finished.")
+		}()
+		//sent the status ok back to UI
+		w.Header().Set("Content-Type", "applciation/json")
+		w.WriteHeader(http.StatusOK)
+
+		response:= map[string]string{
+			"status":"success",
+			"message":fmt.Sprintf("Campagin %s is now running",newCampaign.Name)
+		}
+		json.NewEncoder(w).Encode(response)
+	}
+
+}
