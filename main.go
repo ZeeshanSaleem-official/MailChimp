@@ -67,8 +67,8 @@ func main() {
 	//routes
 
 	http.HandleFunc("/api/recipients", getRecipientHandler(db))
-	http.HandlerFunc("/api/campaign/run",runCampaignHandler(db))
-	
+	http.HandleFunc("/api/campaign/run", runCampaignHandler(db))
+
 	fmt.Println(" Web Server is running on http://localhost:8080")
 	fmt.Println(" Scheduler is running in the background...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -180,9 +180,9 @@ func runCampaignHandler(db *sql.DB) http.HandlerFunc {
 		w.Header().Set("Content-Type", "applciation/json")
 		w.WriteHeader(http.StatusOK)
 
-		response:= map[string]string{
-			"status":"success",
-			"message":fmt.Sprintf("Campagin %s is now running",newCampaign.Name)
+		response := map[string]string{
+			"status":  "success",
+			"message": fmt.Sprintf("Campagin %s is now running", newCampaign.Name),
 		}
 		json.NewEncoder(w).Encode(response)
 	}
