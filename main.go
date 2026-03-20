@@ -67,6 +67,8 @@ func main() {
 	//routes
 
 	http.HandleFunc("/api/recipients", getRecipientHandler(db))
+	http.HandlerFunc("/api/campaign/run",runCampaignHandler(db))
+	
 	fmt.Println(" Web Server is running on http://localhost:8080")
 	fmt.Println(" Scheduler is running in the background...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
