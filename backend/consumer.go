@@ -1,14 +1,16 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"net/smtp"
 	"sync"
 	"time"
+
+	"github.com/ZeeshanSaleem-official/MailChimp/internal/config/types"
+	"github.com/ZeeshanSaleem-official/MailChimp/internal/storage"
 )
 
-func emailWorker(id int, ch chan Recipient, wg *sync.WaitGroup, camp Campaign, db *sql.DB) {
+func emailWorker(id int, ch chan types.Recipient, wg *sync.WaitGroup, camp types.Campaign, store storage.Storage) {
 	defer wg.Done()
 	for recipient := range ch {
 		smtpHost := "localhost"
@@ -16,7 +18,7 @@ func emailWorker(id int, ch chan Recipient, wg *sync.WaitGroup, camp Campaign, d
 
 		// formattedMsg := fmt.Sprintf("To: %s\r\nSubject: Test Email\r\n\r\n%s\r\n", recipient.Email, "Just Testing email")
 		// msg := []byte(formattedMsg)
-		dataForTemplate := EmailData{
+		dataForTemplate := types.EmailData{
 			User: recipient,
 			Camp: camp,
 		}
@@ -33,11 +35,11 @@ func emailWorker(id int, ch chan Recipient, wg *sync.WaitGroup, camp Campaign, d
 		// Update email Status
 		if err != nil {
 			fmt.Printf("Worker: %d Error during sending email for %s: %v\n", id, recipient.Email, err)
-			UpdateEmailStatus(db, recipient.Email, "failed")
+			store.UpdateEmailStatus(recipient.Email, "failed")
 			continue
 		}
 		// Update the email Status function
-		err = UpdateEmailStatus(db, recipient.Email, "sent")
+		err = store.UpdateEmailStatus(recipient.Email, "sent")
 		if err != nil {
 			fmt.Printf("Worker: %d Error during updating email status for %s: %v\n", id, recipient.Email, err)
 			continue

@@ -5,6 +5,8 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+
+	"github.com/ZeeshanSaleem-official/MailChimp/internal/config/types"
 )
 
 func importCSVtoDB(filePath string, db *sql.DB) error {
@@ -33,7 +35,7 @@ func importCSVtoDB(filePath string, db *sql.DB) error {
 }
 
 // fetch all recipients from email
-func fetchRecipientsFromDB(ch chan Recipient, db *sql.DB, seg string) error {
+func fetchRecipientsFromDB(ch chan types.Recipient, db *sql.DB, seg string) error {
 	defer close(ch)
 
 	query := "SELECT email, name FROM recipients WHERE segment = $1"
@@ -55,7 +57,7 @@ func fetchRecipientsFromDB(ch chan Recipient, db *sql.DB, seg string) error {
 		fmt.Printf("Email: %s\r Name:%s\r", email, name)
 		defer row.Close()
 		//Send through channel
-		ch <- Recipient{
+		ch <- types.Recipient{
 			Name:  name,
 			Email: email,
 		}
