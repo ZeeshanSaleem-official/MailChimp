@@ -23,15 +23,20 @@ func emailWorker(id int, ch chan types.Recipient, wg *sync.WaitGroup, camp types
 			Camp: camp,
 		}
 		// executing the email using template dynamically
-		msg, err := executeEmail(dataForTemplate, camp.TemplateFile)
+		body, err := executeEmail(dataForTemplate, camp.TemplateFile)
 		if err != nil {
 			fmt.Printf("Worker: %d Error executing template for %s: %v\n", id, recipient.Email, err)
 			continue
 		}
 		// fmt.Printf("Worker: %d: Sending email to: %s \r\n", id, recipient.Email)
 
+		// Stich the required headers
+		headers := fmt.Sprintf("To: %s\r\nSubject: %s\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n", recipient.Email, camp.Subject)
+		//  Combine them
+		finalmessage := headers + body
+
 		//sending the email
-		err = smtp.SendMail(smtpHost+":"+smtpPort, nil, "zeeshan@gmail.com", []string{recipient.Email}, []byte(msg))
+		err = smtp.SendMail(smtpHost+":"+smtpPort, nil, "zeeshan@gmail.com", []string{recipient.Email}, []byte(finalmessage))
 		// Update email Status
 		if err != nil {
 			fmt.Printf("Worker: %d Error during sending email for %s: %v\n", id, recipient.Email, err)
