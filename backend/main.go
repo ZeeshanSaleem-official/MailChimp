@@ -66,7 +66,7 @@ func main() {
 
 // Run campaign dynamically
 func runCampaign(store storage.Storage, db *sql.DB, camp types.Campaign) {
-	recipientchannel := make(chan types.Recipient) // Add types. here too
+	recipientchannel := make(chan types.Recipient)
 	go func() {
 		fetchRecipientsFromDB(recipientchannel, db, camp.TargetSegment)
 	}()
