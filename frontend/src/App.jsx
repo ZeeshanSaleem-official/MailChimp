@@ -1,6 +1,6 @@
 import { Mail, Users, CheckCircle, XCircle, Clock, Send, RefreshCw, AlertCircle } from 'lucide-react';
 import { useEffect, useState } from "react"
-import './index.css' // THIS IS THE MAGIC LINE! If this is missing, no CSS will load.
+import './index.css' 
 
 function App() {
   const [recipients,setRecipients] = useState([])
