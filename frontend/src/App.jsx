@@ -1,6 +1,7 @@
 import { Mail, Users, CheckCircle, XCircle, Clock, Send, RefreshCw, AlertCircle } from 'lucide-react';
 import { useEffect, useState } from "react"
 import './index.css' 
+import ComposeCampaign from './components/ComposeCampaign';
 
 function App() {
   const [recipients,setRecipients] = useState([])
@@ -79,7 +80,8 @@ function App() {
           <StatCard icon={<XCircle className="text-rose-500"/>} title="Failed" value={stats.failed} />
           <StatCard icon={<Clock className="text-amber-500"/>} title="Pending" value={stats.pending} />
         </div>
-
+        {/* Compose Campaign through the UI */}
+        <ComposeCampaign />
         {/* Database Table */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
