@@ -26,7 +26,7 @@ func GetRecipientHandler(store storage.Storage) http.HandlerFunc {
 	}
 }
 
-// Run Campaign
+// Run Campaign manually for the Postman(later will be done using the frontend)
 func RunCampaignHandler(triggerWorker func(types.Campaign)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
