@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Send, AlertCircle, CheckCircle } from 'lucide-react';
 
 export default function ComposeCampaign() {
-  // 1. State to track the form inputs
+  //  State to track the form inputs
   const [formData, setFormData] = useState({
     name: '',
     subject: '',
@@ -12,12 +12,12 @@ export default function ComposeCampaign() {
   // State for showing the success/error message from the Go backend
   const [statusMsg, setStatusMsg] = useState(null);
 
-  // 2. Handle input changes
+  //  Handle input changes
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 3. The trigger function TO Post the manual email campaign directly from the UI
+  //  The trigger function TO Post the manual email campaign directly from the UI
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Sending payload to Go:", formData);
@@ -31,7 +31,14 @@ export default function ComposeCampaign() {
     if (!response.ok) {
       throw new Error(`Backend Reject the request: ${response.statusText}`);
     }
-    const data = await response.json()
+    try {
+      const data = await response.json()
+      setStatusMsg(data.message)
+    } catch (error) {
+      console.error("Transmission failed:", err);
+      setStatusMsg("Error: Could not reach the backend."); 
+    }
+    
   };
 
   return (
