@@ -36,7 +36,7 @@ func main() {
 	}
 	defer db.Close()
 
-	// 2. Initialize your Clean Architecture Storage!
+	// 2. Initialize  Clean Architecture Storage!
 	store := postgres.NewPostgresStore(db)
 
 	importCSVtoDB("./mail.csv", db)
@@ -80,7 +80,7 @@ func runCampaign(store storage.Storage, db *sql.DB, camp types.Campaign) {
 	wg.Wait()
 }
 
-// Add types. before EmailData
+// Execute email template
 func executeEmail(r types.EmailData, templateName string) (string, error) {
 	t, err := template.ParseFiles(templateName)
 	if err != nil {
