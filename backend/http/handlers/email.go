@@ -9,6 +9,7 @@ import (
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/storage"
 )
 
+// Get Recipients for sending emails
 func GetRecipientHandler(store storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -25,6 +26,7 @@ func GetRecipientHandler(store storage.Storage) http.HandlerFunc {
 	}
 }
 
+// Run Campaign
 func RunCampaignHandler(triggerWorker func(types.Campaign)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -40,7 +42,6 @@ func RunCampaignHandler(triggerWorker func(types.Campaign)) http.HandlerFunc {
 			return
 		}
 
-		// Use the Campaign struct from your types package
 		var newCampaign types.Campaign
 		err := json.NewDecoder(r.Body).Decode(&newCampaign)
 		if err != nil {

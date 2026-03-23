@@ -14,7 +14,7 @@ func NewPostgresStore(db *sql.DB) *PostgresStore {
 	return &PostgresStore{db: db}
 }
 
-// Replaces the DB logic from your old getRecipientHandler
+// Get all recipients function
 func (p *PostgresStore) GetAllRecipients() ([]types.RecipientAPI, error) {
 	query := "SELECT id, name, email, segment, status FROM recipients ORDER BY id ASC"
 	rows, err := p.db.Query(query)
@@ -35,7 +35,7 @@ func (p *PostgresStore) GetAllRecipients() ([]types.RecipientAPI, error) {
 	return users, nil
 }
 
-// Replaces your old UpdateEmailStatus function
+// Updat email status
 func (p *PostgresStore) UpdateEmailStatus(email string, status string) error {
 	query := `UPDATE recipients SET status=$1 WHERE email=$2`
 	_, err := p.db.Exec(query, status, email)
