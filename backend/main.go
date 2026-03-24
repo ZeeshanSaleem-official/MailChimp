@@ -36,7 +36,7 @@ func main() {
 	}
 	defer db.Close()
 
-	// 2. Initialize  Clean Architecture Storage!
+	// Initialize  Clean Architecture Storage!
 	store := postgres.NewPostgresStore(db)
 
 	importCSVtoDB("./mail.csv", db)
@@ -50,12 +50,12 @@ func main() {
 	fmt.Println(" Scheduler started! Waiting for the next scheduled run...")
 	s.StartAsync()
 
-	// 3. Create the bridge function for the POST route
+	// Create the bridge function for the POST route
 	triggerCallback := func(req types.Campaign) {
 		runCampaign(store, db, req)
 	}
 
-	// 4. Register the Clean Handlers
+	// Register the Clean Handlers
 	http.HandleFunc("/api/recipients", handlers.GetRecipientHandler(store))
 	http.HandleFunc("/api/campaign/run", handlers.RunCampaignHandler(triggerCallback))
 
