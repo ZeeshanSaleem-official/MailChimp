@@ -2,7 +2,7 @@ import { Mail, Users, CheckCircle, XCircle, Clock, Send, RefreshCw, AlertCircle 
 import { useEffect, useState } from "react"
 import './index.css' 
 import ComposeCampaign from './components/ComposeCampaign';
-
+import UploadContacts from './components/UploadContacts';
 function App() {
   const [recipients,setRecipients] = useState([])
   const [loading,setLoading] =  useState(true)
@@ -81,7 +81,11 @@ function App() {
           <StatCard icon={<Clock className="text-amber-500"/>} title="Pending" value={stats.pending} />
         </div>
         {/* Compose Campaign through the UI */}
-        <ComposeCampaign />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <ComposeCampaign />
+          {/* Pass the fetchRecipients function so it refreshes the table instantly when done! */}
+          <UploadContacts onUploadSuccess={fetchRecipients} />
+        </div>
         {/* Database Table */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
