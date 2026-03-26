@@ -80,12 +80,14 @@ function App() {
           <StatCard icon={<XCircle className="text-rose-500"/>} title="Failed" value={stats.failed} />
           <StatCard icon={<Clock className="text-amber-500"/>} title="Pending" value={stats.pending} />
         </div>
+        
         {/* Compose Campaign through the UI */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <ComposeCampaign />
           {/* Pass the fetchRecipients function so it refreshes the table instantly when done! */}
           <UploadContacts onUploadSuccess={fetchRecipients} />
         </div>
+
         {/* Database Table */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
