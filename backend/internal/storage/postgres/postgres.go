@@ -35,6 +35,8 @@ func (p *PostgresStore) GetAllRecipients() ([]types.RecipientAPI, error) {
 	return users, nil
 }
 
+// Add Recipients(from UI to Database) function
+
 // Updat email status
 func (p *PostgresStore) UpdateEmailStatus(email string, status string) error {
 	query := `UPDATE recipients SET status=$1 WHERE email=$2`

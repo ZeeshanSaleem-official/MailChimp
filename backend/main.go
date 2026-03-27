@@ -58,6 +58,7 @@ func main() {
 	// Register the Clean Handlers
 	http.HandleFunc("/api/recipients", handlers.GetRecipientHandler(store))
 	http.HandleFunc("/api/campaign/run", handlers.RunCampaignHandler(triggerCallback))
+	http.HandleFunc("/api/recipients/upload", handlers.UploadCSVHandler(store))
 
 	fmt.Println(" Web Server is running on http://localhost:8080")
 	fmt.Println(" Scheduler is running in the background...")
