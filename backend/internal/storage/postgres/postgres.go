@@ -35,11 +35,20 @@ func (p *PostgresStore) GetAllRecipients() ([]types.RecipientAPI, error) {
 	return users, nil
 }
 
-// Add Recipients(from UI to Database) function
-
-// Updat email status
+// Update email status
 func (p *PostgresStore) UpdateEmailStatus(email string, status string) error {
 	query := `UPDATE recipients SET status=$1 WHERE email=$2`
 	_, err := p.db.Exec(query, status, email)
 	return err
+}
+
+// Add Recipients(from UI to Database) function
+func (p *PostgresStore) AddRecipients(name string, email string, segment string) error {
+	query := "INSERT INTO recipients (name, email, segment) VALUES ($1,$2,$3) ON CONFLICT (email) DO NOTHING"
+	_, err := p.db.Exec(query, &name, &email, &segment)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

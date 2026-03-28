@@ -100,7 +100,6 @@ func UploadCSVHandler(store storage.Storage) http.HandlerFunc {
 			return
 		}
 		defer file.Close()
-		// Later will send to the Database
 		fmt.Printf("\n[Incoming File] Received %s (%d bytes)\n", header.Filename, header.Size)
 
 		reader := csv.NewReader(file)
@@ -114,8 +113,13 @@ func UploadCSVHandler(store storage.Storage) http.HandlerFunc {
 			}
 			if err != nil {
 				http.Error(w, "Error during reading file from csv", http.StatusBadRequest)
+				return
 			}
-			fmt.Printf("Parsed Row -> Name: %s | Email: %s | Segment: %s\n", record[0], record[1], record[2])
+			err = store.AddRecipients(record[0], record[1], record[2])
+			if err != nil {
+				http.Error(w, "Error during adding record in Database", http.StatusBadRequest)
+				return
+			}
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
