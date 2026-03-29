@@ -18,11 +18,12 @@ func InitDB(connSTr string) (*sql.DB, error) {
 		return nil, err
 	}
 	fmt.Println(" PostgreSQL Database connected successfully!")
+	// email should be unique even name or remaining fields remains same
 	query := `
 	CREATE TABLE IF NOT EXISTS recipients(
 	id SERIAL PRIMARY KEY,
 		name VARCHAR(100) NOT NULL,
-		email VARCHAR(150) UNIQUE NOT NULL,
+		email VARCHAR(150) UNIQUE NOT NULL, 
 		segment VARCHAR(50) DEFAULT 'general',
 		status VARCHAR(50) DEFAULT 'pending',
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

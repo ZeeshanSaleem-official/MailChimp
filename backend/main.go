@@ -30,6 +30,7 @@ func main() {
 	cfg := config.MustLoad("local.yml")
 	fmt.Printf("loaded Config for Environment %s\n", cfg.Env)
 
+	//initialaize the db
 	db, err := storage.InitDB(cfg.StoragePath)
 	if err != nil {
 		log.Fatalf("Fatal DB Error: %v", err)
@@ -39,8 +40,10 @@ func main() {
 	// Initialize  Clean Architecture Storage!
 	store := postgres.NewPostgresStore(db)
 
+	// CSV to DB
 	importCSVtoDB("./mail.csv", db)
 
+	// Scheduling the campaign
 	s := gocron.NewScheduler(time.Local)
 	s.Every(1).Minute().Do(func() {
 		fmt.Printf("\n [%v] Scheduled Task Triggered: Starting Campaign '%s'...\n", time.Now().Format("15:04:05"), myCampaign.Name)

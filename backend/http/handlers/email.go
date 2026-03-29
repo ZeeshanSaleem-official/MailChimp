@@ -103,8 +103,9 @@ func UploadCSVHandler(store storage.Storage) http.HandlerFunc {
 		fmt.Printf("\n[Incoming File] Received %s (%d bytes)\n", header.Filename, header.Size)
 
 		reader := csv.NewReader(file)
-		// for not reading the column name
+		// line of code for not reading the column name
 		_, _ = reader.Read()
+		// read remaining all details
 		for {
 			record, err := reader.Read()
 
