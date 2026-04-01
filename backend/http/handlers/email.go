@@ -16,9 +16,11 @@ func GetRecipientHandler(store storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Content-Type", "application/json")
+		segmentFilter:=r.URL.Query().Get("segment")
+
 
 		// Ask the storage interface for the data, no SQL needed here!
-		users, err := store.GetAllRecipients()
+		users, err := store.GetAllRecipients(segmentFilter)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
