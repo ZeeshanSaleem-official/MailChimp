@@ -13,12 +13,22 @@ import (
 	"github.com/ZeeshanSaleem-official/MailChimp/http/handlers"
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/config"
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/config/types"
+	"github.com/ZeeshanSaleem-official/MailChimp/internal/mailer"
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/storage"
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/storage/postgres"
 	"github.com/go-co-op/gocron"
 )
 
 func main() {
+	// for testing a mail
+	testMailer:=mailer.NewMailer("sandbox.smtp.mailtrap.io",2525,"6b0b665ff82a07","d2b35bbb4dfb46")
+	err:=testMailer.SendEmail("zeeshan@test.com", "System Online", "<h1>Tech Bird Mailer is ALIVE!</h1><p>The engine is working perfectly.</p>")
+	if err!=nil {
+		fmt.Println("Engine Failed!!",err)
+	}else{
+		fmt.Println("Engine fired Mail successfully! Check Maitrap")
+	}
+	// custom Campaign
 	myCampaign := types.Campaign{
 		Name:          "Spring Sale 2026",
 		Subject:       "Exclusive 50 percent off for Premium Members!",
