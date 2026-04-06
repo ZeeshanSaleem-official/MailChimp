@@ -130,7 +130,7 @@ function App() {
         >
           <option value="all"> All Users</option>
           <option value="premium"> Premium Only</option>
-          <option value="premium"> General Only</option>
+          <option value="general"> General Only</option>
         </select>
         {/* Database Table */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
