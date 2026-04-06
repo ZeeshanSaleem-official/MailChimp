@@ -72,6 +72,7 @@ func main() {
 	http.HandleFunc("/api/recipients", handlers.GetRecipientHandler(store))
 	http.HandleFunc("/api/campaign/run", handlers.RunCampaignHandler(triggerCallback))
 	http.HandleFunc("/api/recipients/upload", handlers.UploadCSVHandler(store))
+	http.HandleFunc("/api/campaign/send",handlers.SendCampaignHandler(store,testMailer))
 
 	fmt.Println(" Web Server is running on http://localhost:8080")
 	fmt.Println(" Scheduler is running in the background...")

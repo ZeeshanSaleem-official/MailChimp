@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/config/types"
+	"github.com/ZeeshanSaleem-official/MailChimp/internal/mailer"
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/storage"
 )
 
@@ -129,4 +130,7 @@ func UploadCSVHandler(store storage.Storage) http.HandlerFunc {
 		w.Write([]byte(`{"status":"success", "message":"File parsed successfully"}`))
 	}
 
+}
+func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer)http.HandlerFunc  {
+	
 }
