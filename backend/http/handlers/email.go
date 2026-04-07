@@ -133,7 +133,12 @@ func UploadCSVHandler(store storage.Storage) http.HandlerFunc {
 func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method not allowed in the send Capmaign Handler", http.StatusMethodNotAllowed)
 			return

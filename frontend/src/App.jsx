@@ -12,6 +12,8 @@ import { useEffect, useState } from "react";
 import "./index.css";
 import ComposeCampaign from "./components/ComposeCampaign";
 import UploadContacts from "./components/UploadContacts";
+import QuickComposeCampaign from "./components/QuickEmailComposer";
+
 function App() {
   const [recipients, setRecipients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -117,7 +119,10 @@ function App() {
 
         {/* Compose Campaign through the UI */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Template Compose Capmaign */}
           <ComposeCampaign />
+          {/* Custom Compose Campaign */}
+          <QuickComposeCampaign />
           {/* Pass the fetchRecipients function so it refreshes the table instantly when done! */}
           <UploadContacts onUploadSuccess={fetchRecipients} />
         </div>
