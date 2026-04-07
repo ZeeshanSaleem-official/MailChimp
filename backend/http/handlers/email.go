@@ -17,8 +17,7 @@ func GetRecipientHandler(store storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Content-Type", "application/json")
-		segmentFilter:=r.URL.Query().Get("segment")
-
+		segmentFilter := r.URL.Query().Get("segment")
 
 		// Ask the storage interface for the data, no SQL needed here!
 		users, err := store.GetAllRecipients(segmentFilter)
@@ -131,6 +130,41 @@ func UploadCSVHandler(store storage.Storage) http.HandlerFunc {
 	}
 
 }
-func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer)http.HandlerFunc  {
-	
+func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed in the send Capmaign Handler", http.StatusMethodNotAllowed)
+			return
+		}
+		// Struct for the get data from react UI
+		var payload struct {
+			Subject string `json:"subject"`
+			Body    string `json:"body"`
+			Segment string `json:"segment"`
+		}
+		// Decoding the payload from the UI
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "Error during decoding the UI values", http.StatusBadRequest)
+			return
+		}
+
+		// Call the recipients function for getting users of segment
+		users, err := store.GetAllRecipients(payload.Segment)
+		if err != nil {
+			http.Error(w, "Error while calling backend for users", http.StatusInternalServerError)
+			return
+		}
+		// Loop through whole segment and send emails
+		for _, user := range users {
+			err := mail.SendEmail(user.Email, payload.Subject, payload.Body)
+			if err != nil {
+				fmt.Printf("Error while sending mail to %s\r\n%v\n", user.Email, err)
+				continue
+			}
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"success", "message":"Campaign dispatched!"}`))
+	}
 }
