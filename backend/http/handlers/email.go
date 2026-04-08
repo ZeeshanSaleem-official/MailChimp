@@ -132,6 +132,7 @@ func UploadCSVHandler(store storage.Storage) http.HandlerFunc {
 }
 func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Setup Cors
 		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -162,13 +163,16 @@ func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer) http.Handle
 			return
 		}
 		// Loop through whole segment and send emails
-		for _, user := range users {
-			err := mail.SendEmail(user.Email, payload.Subject, payload.Body)
-			if err != nil {
-				fmt.Printf("Error while sending mail to %s\r\n%v\n", user.Email, err)
-				continue
+		go func() {
+			for _, user := range users {
+				err := mail.SendEmail(user.Email, payload.Subject, payload.Body)
+				if err != nil {
+					fmt.Printf("Error while sending mail to %s\r\n%v\n", user.Email, err)
+					continue
+				}
 			}
-		}
+		}()
+		// After successful send write header status to OK!
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"success", "message":"Campaign dispatched!"}`))
 	}
