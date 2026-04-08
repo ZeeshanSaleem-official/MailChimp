@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Send, AlertCircle, CheckCircle } from "lucide-react";
+import ReactQuill from "react-quill-new";
+import "react-quill-new/dist/quill.snow.css";
 
 export default function QuickComposeCampaign() {
   //  State to track the form inputs
@@ -60,19 +62,19 @@ export default function QuickComposeCampaign() {
           />
         </div>
 
-        {/* Email Body Field (Added for HTML!) */}
+        {/* Rich Text Editor */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">
-            Email Body (HTML supported)
+            Email Body (Rich Text)
           </label>
-          <textarea
-            placeholder="<h1>Hello Tech Bird Members!</h1><p>Big news today...</p>"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            rows="5"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-mono"
-            required
-          />
+          <div className="bg-white rounded-lg">
+            <ReactQuill
+              theme="snow"
+              value={body}
+              onChange={setBody}
+              className="h-64 mb-12"
+            />
+          </div>
         </div>
 
         {/* Target Segment Dropdown */}
