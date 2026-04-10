@@ -12,6 +12,13 @@ type Config struct {
 	HTTPServer  struct {
 		Address string `yaml:"address"`
 	} `yaml:"http_server"`
+
+	SMTP struct {
+		Host     string `yaml:"host"`
+		Port     int    `yaml:"port"`
+		Username string `yaml:"username"`
+		Password string `yaml:"password"`
+	} `yaml:"smtp"`
 }
 
 func MustLoad(configPath string) *Config {

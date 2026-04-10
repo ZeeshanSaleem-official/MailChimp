@@ -21,11 +21,17 @@ import (
 
 func main() {
 	// for testing a mail
-	testMailer:=mailer.NewMailer("sandbox.smtp.mailtrap.io",2525,"6b0b665ff82a07","d2b35bbb4dfb46")
-	err:=testMailer.SendEmail("zeeshan@test.com", "System Online", "<h1>Tech Bird Mailer is ALIVE!</h1><p>The engine is working perfectly.</p>")
-	if err!=nil {
-		fmt.Println("Engine Failed!!",err)
-	}else{
+	cfg := config.MustLoad("local.yml")
+
+	testMailer := mailer.NewMailer(
+		cfg.SMTP.Host,
+		cfg.SMTP.Port,
+		cfg.SMTP.Username,
+		cfg.SMTP.Password)
+	err := testMailer.SendEmail("zeeshan@test.com", "System Online", "<h1>Tech Bird Mailer is ALIVE!</h1><p>The engine is working perfectly.</p>")
+	if err != nil {
+		fmt.Println("Engine Failed!!", err)
+	} else {
 		fmt.Println("Engine fired Mail successfully! Check Maitrap")
 	}
 	// custom Campaign
@@ -37,7 +43,6 @@ func main() {
 	}
 
 	fmt.Println("Email Dispatcher using GoLang Backend!!!")
-	cfg := config.MustLoad("local.yml")
 	fmt.Printf("loaded Config for Environment %s\n", cfg.Env)
 
 	//initialaize the db
@@ -72,7 +77,7 @@ func main() {
 	http.HandleFunc("/api/recipients", handlers.GetRecipientHandler(store))
 	http.HandleFunc("/api/campaign/run", handlers.RunCampaignHandler(triggerCallback))
 	http.HandleFunc("/api/recipients/upload", handlers.UploadCSVHandler(store))
-	http.HandleFunc("/api/campaign/send",handlers.SendCampaignHandler(store,testMailer))
+	http.HandleFunc("/api/campaign/send", handlers.SendCampaignHandler(store, testMailer))
 
 	fmt.Println(" Web Server is running on http://localhost:8080")
 	fmt.Println(" Scheduler is running in the background...")
