@@ -168,7 +168,12 @@ func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer) http.Handle
 				err := mail.SendEmail(user.Email, payload.Subject, payload.Body)
 				if err != nil {
 					fmt.Printf("Error while sending mail to %s\r\n%v\n", user.Email, err)
+					_ = store.UpdateEmailStatus(user.Email, "failed")
 					continue
+				}
+				updateErr := store.UpdateEmailStatus(user.Email, "sent")
+				if updateErr != nil {
+					fmt.Printf("Email sent to %s, but DB update failed: %v\n", user.Email, updateErr)
 				}
 			}
 		}()
