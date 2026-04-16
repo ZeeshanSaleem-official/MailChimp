@@ -17,14 +17,14 @@ func NewPostgresStore(db *sql.DB) *PostgresStore {
 // Get all recipients function
 func (p *PostgresStore) GetAllRecipients(segment string) ([]types.RecipientAPI, error) {
 	var rows *sql.Rows
-    var err error
-	if segment=="" {
+	var err error
+	if segment == "" {
 		query := "SELECT id, name, email, segment, status FROM recipients ORDER BY id ASC"
 		rows, err = p.db.Query(query)
 
 	} else {
 		query := `SELECT id, name, email, segment, status FROM recipients WHERE segment = $1`
-		rows, err = p.db.Query(query,segment)
+		rows, err = p.db.Query(query, segment)
 	}
 	if err != nil {
 		return nil, err
@@ -58,5 +58,14 @@ func (p *PostgresStore) AddRecipients(name string, email string, segment string)
 		return err
 	}
 
+	return nil
+}
+
+func (p *PostgresStore) CreateUser(email string, hashPassword string) error {
+	query := `INSERT INTO users (email, password_hash) VALUES ($1, $2)`
+	_, err := p.db.Exec(query)
+	if err != nil {
+		return err
+	}
 	return nil
 }
