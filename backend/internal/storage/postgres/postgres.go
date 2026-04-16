@@ -63,7 +63,7 @@ func (p *PostgresStore) AddRecipients(name string, email string, segment string)
 
 func (p *PostgresStore) CreateUser(email string, hashPassword string) error {
 	query := `INSERT INTO users (email, password_hash) VALUES ($1, $2)`
-	_, err := p.db.Exec(query)
+	_, err := p.db.Exec(query, &email, &hashPassword)
 	if err != nil {
 		return err
 	}
