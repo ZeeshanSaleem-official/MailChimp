@@ -7,4 +7,5 @@ type Storage interface {
 	UpdateEmailStatus(email string, status string) error
 	AddRecipients(name string, email string, segment string) error
 	CreateUser(email string, passwordHash string) error
+	GetUser(email string) (types.User, error)
 }

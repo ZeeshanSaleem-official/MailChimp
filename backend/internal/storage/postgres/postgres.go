@@ -61,6 +61,7 @@ func (p *PostgresStore) AddRecipients(name string, email string, segment string)
 	return nil
 }
 
+// Creating a user for authentication
 func (p *PostgresStore) CreateUser(email string, hashPassword string) error {
 	query := `INSERT INTO users (email, password_hash) VALUES ($1, $2)`
 	_, err := p.db.Exec(query, &email, &hashPassword)
@@ -68,4 +69,16 @@ func (p *PostgresStore) CreateUser(email string, hashPassword string) error {
 		return err
 	}
 	return nil
+}
+
+// Getting a user for validation
+func (p *PostgresStore) GetUser(email string) (*types.User, error) {
+	query := `SELECT id, email, password_hash FROM users WHERE email = $1`
+	rows := p.db.QueryRow(query, email)
+	var u types.User
+	err := rows.Scan(&u.ID, &u.Email, &u.HashPassword)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
 }
