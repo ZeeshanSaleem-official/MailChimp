@@ -12,6 +12,7 @@ type Config struct {
 	HTTPServer  struct {
 		Address string `yaml:"address"`
 	} `yaml:"http_server"`
+	JWTSecret string `yaml:"jwt_secret"`
 
 	SMTP struct {
 		Host     string `yaml:"host"`

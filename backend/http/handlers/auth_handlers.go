@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/config/types"
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/storage"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -41,7 +43,20 @@ func SignUpHandlers(store storage.Storage) http.HandlerFunc {
 	}
 }
 
-func LoginHandlers(store storage.Storage) http.HandlerFunc {
+func GenerateToken(user types.User, secret string) (string, error) {
+	// Create the claims (the data inside the token)
+	claims := jwt.MapClaims{
+		"id":    user.ID,
+		"email": user.Email,
+		"exp":   time.Now().Add(time.Hour * 24).Unix(),
+	}
+	// Create the token blueprint
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	// Sign it with your YAML secret
+	return token.SignedString([]byte(secret))
+}
+
+func LoginHandlers(store storage.Storage, jwtSecret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var payload AuthPayload
 
@@ -51,7 +66,7 @@ func LoginHandlers(store storage.Storage) http.HandlerFunc {
 			return
 		}
 		// Get Users
-		var u types.User
+		var u *types.User
 		u, err = store.GetUser(payload.Email)
 		if err != nil {
 			http.Error(w, "Error while getting user for validation", http.StatusBadRequest)
@@ -64,9 +79,17 @@ func LoginHandlers(store storage.Storage) http.HandlerFunc {
 			http.Error(w, "Error while decryption", http.StatusUnauthorized)
 			return
 		}
-		// Status Ok
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Logged In Successfully!!"})
+		token, err := GenerateToken(*u, jwtSecret)
+		if err != nil {
+			http.Error(w, "Failed to Generate Token", http.StatusInternalServerError)
+			return
+		}
+		// Send Token to react
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "Logged In Successfully!!",
+			"token":   token,
+		})
 
 	}
 }
