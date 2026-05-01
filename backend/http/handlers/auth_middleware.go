@@ -3,26 +3,19 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 func AuthMiddleware(jwtSecret string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Grab the Authorization header
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "Missing Authorization token", http.StatusUnauthorized)
+		// Grab the Authorization token from cookie
+		cookie, err := r.Cookie("jwt")
+		if cookie.Value == "" {
+			http.Error(w, "Missing authentication cookie", http.StatusUnauthorized)
 			return
 		}
-		// Strip the "Bearer " prefix to get the raw token strings
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			http.Error(w, "Invalid Authorization format. Expected 'Bearer <token>'", http.StatusUnauthorized)
-			return
-		}
-		tokenString := parts[1]
+		tokenString := cookie.Value
 		parsedToken, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 			_, ok := t.Method.(*jwt.SigningMethodHMAC)
 			if !ok {

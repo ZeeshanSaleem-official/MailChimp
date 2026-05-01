@@ -84,11 +84,21 @@ func LoginHandlers(store storage.Storage, jwtSecret string) http.HandlerFunc {
 			http.Error(w, "Failed to Generate Token", http.StatusInternalServerError)
 			return
 		}
-		// Send Token to react
+		// THE HTTP-ONLY COOKIE
+		cookie := &http.Cookie{
+			Name:     "jwt",
+			Value:    token,
+			Expires:  time.Now().Add(24 * time.Hour),
+			HttpOnly: true,
+			Secure:   false,
+			Path:     "/",
+			SameSite: http.SameSiteLaxMode,
+		}
+		http.SetCookie(w, cookie)
+		// Send final success  to react(frontend)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
 			"message": "Logged In Successfully!!",
-			"token":   token,
 		})
 
 	}
