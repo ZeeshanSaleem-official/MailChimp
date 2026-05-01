@@ -77,7 +77,7 @@ func main() {
 	http.HandleFunc("/api/recipients", handlers.GetRecipientHandler(store))
 	http.HandleFunc("/api/campaign/run", handlers.RunCampaignHandler(triggerCallback))
 	http.HandleFunc("/api/recipients/upload", handlers.UploadCSVHandler(store))
-	http.HandleFunc("/api/campaign/send", handlers.SendCampaignHandler(store, testMailer))
+	http.HandleFunc("/api/campaign/send", handlers.AuthMiddleware(cfg.JWTSecret, handlers.SendCampaignHandler(store, testMailer)))
 	http.HandleFunc("/api/signup", handlers.SignUpHandlers(store))
 	http.HandleFunc("/api/login", handlers.LoginHandlers(store, cfg.JWTSecret))
 
