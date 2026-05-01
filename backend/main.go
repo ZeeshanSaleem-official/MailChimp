@@ -17,6 +17,7 @@ import (
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/storage"
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/storage/postgres"
 	"github.com/go-co-op/gocron"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -72,18 +73,29 @@ func main() {
 	triggerCallback := func(req types.Campaign) {
 		runCampaign(store, db, req)
 	}
-
+	// Create a dedicated router
+	mux := http.NewServeMux()
 	// Register the Clean Handlers
-	http.HandleFunc("/api/recipients", handlers.GetRecipientHandler(store))
-	http.HandleFunc("/api/campaign/run", handlers.RunCampaignHandler(triggerCallback))
-	http.HandleFunc("/api/recipients/upload", handlers.UploadCSVHandler(store))
-	http.HandleFunc("/api/campaign/send", handlers.AuthMiddleware(cfg.JWTSecret, handlers.SendCampaignHandler(store, testMailer)))
-	http.HandleFunc("/api/signup", handlers.SignUpHandlers(store))
-	http.HandleFunc("/api/login", handlers.LoginHandlers(store, cfg.JWTSecret))
+	mux.HandleFunc("/api/recipients", handlers.GetRecipientHandler(store))
+	mux.HandleFunc("/api/campaign/run", handlers.RunCampaignHandler(triggerCallback))
+	mux.HandleFunc("/api/recipients/upload", handlers.UploadCSVHandler(store))
+	mux.HandleFunc("/api/campaign/send", handlers.AuthMiddleware(cfg.JWTSecret, handlers.SendCampaignHandler(store, testMailer)))
+	mux.HandleFunc("/api/signup", handlers.SignUpHandlers(store))
+	mux.HandleFunc("/api/login", handlers.LoginHandlers(store, cfg.JWTSecret))
 
 	fmt.Println(" Web Server is running on http://localhost:8080")
 	fmt.Println(" Scheduler is running in the background...")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	// Configure CORS to allow  React frontend (Fort Knox settings)
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:5173"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowCredentials: true,
+	})
+	// Wrap  mux with the CORS handler
+	handler := c.Handler(mux)
+	// Start the server using the wrapped handler
+	log.Fatal(http.ListenAndServe(":8080", handler))
 }
 
 // Run campaign dynamically
