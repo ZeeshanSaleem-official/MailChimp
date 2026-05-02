@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Send, AlertCircle, CheckCircle } from "lucide-react";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
+import axios from "axios";
 
 export default function QuickComposeCampaign() {
   //  State to track the form inputs
@@ -14,16 +15,10 @@ export default function QuickComposeCampaign() {
     e.preventDefault();
     setStatus("loading");
     try {
-      const response = await fetch("http://localhost:8080/api/campaign/send", {
-        method: "Post",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          subject: subject,
-          body: body,
-          segment: segment,
-        }),
+      const response = await axios.get("/api/campaign/send", {
+        subject: subject,
+        body: body,
+        segment: segment,
       });
       if (!response.ok) {
         throw new Error("Failed to Send Campagin");

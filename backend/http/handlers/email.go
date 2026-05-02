@@ -15,8 +15,6 @@ import (
 // Get Recipients for sending emails
 func GetRecipientHandler(store storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Content-Type", "application/json")
 		segmentFilter := r.URL.Query().Get("segment")
 
 		// Ask the storage interface for the data, no SQL needed here!
@@ -33,9 +31,6 @@ func GetRecipientHandler(store storage.Storage) http.HandlerFunc {
 // Run Campaign manually for the Postman(later will be done using the frontend)
 func RunCampaignHandler(triggerWorker func(types.Campaign)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
@@ -62,7 +57,6 @@ func RunCampaignHandler(triggerWorker func(types.Campaign)) http.HandlerFunc {
 			triggerWorker(newCampaign)
 		}()
 
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
 		response := map[string]string{
@@ -76,9 +70,6 @@ func RunCampaignHandler(triggerWorker func(types.Campaign)) http.HandlerFunc {
 // For fetching the data from the CSV upload file
 func UploadCSVHandler(store storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "Post,Options")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 		if r.Method == "Options" {
 			w.WriteHeader(http.StatusOK)
@@ -124,7 +115,6 @@ func UploadCSVHandler(store storage.Storage) http.HandlerFunc {
 				return
 			}
 		}
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"success", "message":"File parsed successfully"}`))
 	}
@@ -132,10 +122,7 @@ func UploadCSVHandler(store storage.Storage) http.HandlerFunc {
 }
 func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Setup Cors
-		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return

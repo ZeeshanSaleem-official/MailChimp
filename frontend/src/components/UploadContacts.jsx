@@ -30,10 +30,7 @@ export default function uploadContact({ onUploadSuccess }) {
     try {
       const response = await fetch(
         "http://localhost:8080/api/recipients/upload",
-        {
-          method: "POST",
-          body: formData,
-        },
+        formData,
       );
       if (!response.ok) {
         throw new Error(`Upload Failed due to ${response.statusText}`);
@@ -88,19 +85,22 @@ export default function uploadContact({ onUploadSuccess }) {
           onClick={handleUpload}
           disabled={isUploading}
           className={`w-full mt-6 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-md flex items-center justify-center gap-2
-            ${isUploading ? 'bg-emerald-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 hover:shadow-lg'}`}
+            ${isUploading ? "bg-emerald-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 hover:shadow-lg"}`}
         >
-          {isUploading ? 'Uploading to server': 'Upload to Database'}
-          </button>
-        )}
-        {uploadMessage && (
-          <div className={`mt-4 p-3 rounded-lg text-sm font-medium border ${
-          uploadMessage.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'
-        }`}>
+          {isUploading ? "Uploading to server" : "Upload to Database"}
+        </button>
+      )}
+      {uploadMessage && (
+        <div
+          className={`mt-4 p-3 rounded-lg text-sm font-medium border ${
+            uploadMessage.type === "success"
+              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+              : "bg-rose-50 text-rose-700 border-rose-200"
+          }`}
+        >
           {uploadMessage.text}
         </div>
-        )}
-      
+      )}
     </div>
   );
 }

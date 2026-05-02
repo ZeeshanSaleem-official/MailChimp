@@ -1,14 +1,15 @@
-import { useState } from 'react';
-import { Send, AlertCircle, CheckCircle } from 'lucide-react';
+import { useState } from "react";
+import { Send, AlertCircle, CheckCircle } from "lucide-react";
+import axios from "axios";
 
 export default function ComposeCampaign() {
   //  State to track the form inputs
   const [formData, setFormData] = useState({
-    name: '',
-    subject: '',
-    segment: 'premium'
+    name: "",
+    subject: "",
+    segment: "premium",
   });
-  
+
   // State for showing the success/error message from the Go backend
   const [statusMsg, setStatusMsg] = useState(null);
 
@@ -21,40 +22,36 @@ export default function ComposeCampaign() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Sending payload to Go:", formData);
-    const response = await fetch ('http://localhost:8080/api/campaign/run',{
-      method: 'Post',
-      headers:{
-        'Content-Type': 'application/json',
-      },
-      body:JSON.stringify(formData)
-    })
+    const response = await axios.get("/api/campaign/run", formData);
     if (!response.ok) {
       throw new Error(`Backend Reject the request: ${response.statusText}`);
     }
     try {
-      const data = await response.json()
-      setStatusMsg(data.message)
+      const data = await response.json();
+      setStatusMsg(data.message);
     } catch (error) {
       console.error("Transmission failed:", err);
-      setStatusMsg("Error: Could not reach the backend."); 
+      setStatusMsg("Error: Could not reach the backend.");
     }
-    
   };
 
   return (
     <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 max-w-2xl mx-auto mt-8">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Compose Campaign</h2>
-        <p className="text-gray-500 text-sm mt-1">Deploy your next email blast to your database.</p>
+        <p className="text-gray-500 text-sm mt-1">
+          Deploy your next email blast to your database.
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        
         {/* Campaign Name Field */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Campaign Name</label>
-          <input 
-            type="text" 
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Campaign Name
+          </label>
+          <input
+            type="text"
             name="name"
             placeholder="e.g., Spring Sale 2026"
             value={formData.name}
@@ -66,9 +63,11 @@ export default function ComposeCampaign() {
 
         {/* Subject Line Field */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Email Subject Line</label>
-          <input 
-            type="text" 
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Email Subject Line
+          </label>
+          <input
+            type="text"
             name="subject"
             placeholder="Exclusive 50% off inside!"
             value={formData.subject}
@@ -80,8 +79,10 @@ export default function ComposeCampaign() {
 
         {/* Target Segment Dropdown */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Target Segment</label>
-          <select 
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Target Segment
+          </label>
+          <select
             name="segment"
             value={formData.segment}
             onChange={handleChange}
@@ -94,7 +95,7 @@ export default function ComposeCampaign() {
         </div>
 
         {/* The Massive Send Button */}
-        <button 
+        <button
           type="submit"
           className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-md hover:shadow-lg"
         >

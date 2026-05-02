@@ -87,7 +87,7 @@ func main() {
 	fmt.Println(" Scheduler is running in the background...")
 	// Configure CORS to allow  React frontend (Fort Knox settings)
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:5173"},
+		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		AllowCredentials: true,
@@ -95,6 +95,7 @@ func main() {
 	// Wrap  mux with the CORS handler
 	handler := c.Handler(mux)
 	// Start the server using the wrapped handler
+	fmt.Println("🚨 CORS FIX VERSION 2 IS ALIVE AND RUNNING! 🚨")
 	log.Fatal(http.ListenAndServe(":8080", handler))
 }
 

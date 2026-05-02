@@ -13,6 +13,7 @@ import "./index.css";
 import ComposeCampaign from "./components/ComposeCampaign";
 import UploadContacts from "./components/UploadContacts";
 import QuickComposeCampaign from "./components/QuickEmailComposer";
+import apiClient from "./api/axios";
 
 function App() {
   const [recipients, setRecipients] = useState([]);
@@ -22,20 +23,15 @@ function App() {
 
   //Fetch recipients from the DB
   const fetchRecipients = async () => {
-    let url = "http://localhost:8080/api/recipients";
+    let url = "/api/recipients";
     try {
       // search for filtered users
       if (filter != "all") {
-        url = `http://localhost:8080/api/recipients?segment=${filter}`;
+        url = `/api/recipients?segment=${filter}`;
       }
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Failed to fetch data from the server");
-      }
-
-      const data = await response.json();
+      const response = await apiClient.get(url);
       // IF DB is empty, Go backend might send null, so we default to an empty array
-      setRecipients(data || []);
+      setRecipients(response.data || []);
       setError(null);
     } catch (err) {
       console.error("Fetch error:", err);
