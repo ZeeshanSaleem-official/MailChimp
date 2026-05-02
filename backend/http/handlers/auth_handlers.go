@@ -19,6 +19,10 @@ type AuthPayload struct {
 
 func SignUpHandlers(store storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
 		var payload AuthPayload
 		//Decode the incoming email and password
 		err := json.NewDecoder(r.Body).Decode(&payload)
@@ -35,9 +39,14 @@ func SignUpHandlers(store storage.Storage) http.HandlerFunc {
 		// Creating user and Save to Database
 		err = store.CreateUser(payload.Email, string(hash))
 		if err != nil {
-			http.Error(w, "User Already exists or DB error", http.StatusConflict)
+			fmt.Println("DB ERROR:", err) // Print it to the terminal so you can see it!
+			http.Error(w, "Database failed to create user", http.StatusInternalServerError)
 			return
 		}
+		// if err != nil {
+		// 	http.Error(w, "User Already exists or DB error", http.StatusConflict)
+		// 	return
+		// }
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]string{"message": "Account created successfully!"})
 	}

@@ -3,6 +3,7 @@ import { Send, AlertCircle, CheckCircle } from "lucide-react";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 import axios from "axios";
+import apiClient from "../api/axios";
 
 export default function QuickComposeCampaign() {
   //  State to track the form inputs
@@ -15,7 +16,7 @@ export default function QuickComposeCampaign() {
     e.preventDefault();
     setStatus("loading");
     try {
-      const response = await axios.get("/api/campaign/send", {
+      const response = await apiClient.get("/api/campaign/send", {
         subject: subject,
         body: body,
         segment: segment,
