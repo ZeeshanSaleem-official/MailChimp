@@ -39,7 +39,7 @@ func SignUpHandlers(store storage.Storage) http.HandlerFunc {
 		// Creating user and Save to Database
 		err = store.CreateUser(payload.Email, string(hash))
 		if err != nil {
-			fmt.Println("DB ERROR:", err) // Print it to the terminal so you can see it!
+			fmt.Println("DB ERROR:", err)
 			http.Error(w, "Database failed to create user", http.StatusInternalServerError)
 			return
 		}
@@ -108,6 +108,7 @@ func LoginHandlers(store storage.Storage, jwtSecret string) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
 			"message": "Logged In Successfully!!",
+			"role":    u.Role,
 		})
 
 	}

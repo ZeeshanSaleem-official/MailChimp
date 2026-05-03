@@ -73,10 +73,10 @@ func (p *PostgresStore) CreateUser(email string, hashPassword string) error {
 
 // Getting a user for validation
 func (p *PostgresStore) GetUser(email string) (*types.User, error) {
-	query := `SELECT id, email, password_hash FROM users WHERE email = $1`
+	query := `SELECT id, email, password_hash, role FROM users WHERE email = $1`
 	rows := p.db.QueryRow(query, email)
 	var u types.User
-	err := rows.Scan(&u.ID, &u.Email, &u.HashPassword)
+	err := rows.Scan(&u.ID, &u.Email, &u.HashPassword, &u.Role)
 	if err != nil {
 		return nil, err
 	}

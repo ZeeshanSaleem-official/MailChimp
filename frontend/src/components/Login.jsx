@@ -21,8 +21,15 @@ export default function Login() {
     setLoading(true);
     try {
       const response = await apiClient.post("/api/login", formData);
+      // for storing role of users on local storage
+      localStorage.setItem("userRole", response.data.role);
       console.log("System Authorized:", response.data);
-      navigate("/");
+      // navigate the user according to their roles
+      if (response.data.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       console.error("Login Failed", err);
       setErr(
