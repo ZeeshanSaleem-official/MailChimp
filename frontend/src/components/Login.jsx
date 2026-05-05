@@ -23,7 +23,6 @@ export default function Login() {
       const response = await apiClient.post("/api/login", formData);
       // for storing role of users on local storage
       localStorage.setItem("userRole", response.data.role);
-      console.log("System Authorized:", response.data);
       // navigate the user according to their roles
       if (response.data.role === "admin") {
         navigate("/admin");
@@ -38,7 +37,6 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
-    console.log("Login submitted:", formData);
   };
 
   return (
