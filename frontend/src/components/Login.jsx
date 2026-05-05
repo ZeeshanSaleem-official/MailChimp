@@ -21,6 +21,7 @@ export default function Login() {
     setLoading(true);
     try {
       const response = await apiClient.post("/api/login", formData);
+      console.log("GO BACKEND SENT:", response.data);
       // for storing role of users on local storage
       localStorage.setItem("userRole", response.data.role);
       // navigate the user according to their roles
