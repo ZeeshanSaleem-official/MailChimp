@@ -15,6 +15,7 @@ import (
 type AuthPayload struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	UserRole string `json:"userRole"`
 }
 
 func SignUpHandlers(store storage.Storage) http.HandlerFunc {
@@ -37,7 +38,7 @@ func SignUpHandlers(store storage.Storage) http.HandlerFunc {
 			return
 		}
 		// Creating user and Save to Database
-		err = store.CreateUser(payload.Email, string(hash))
+		err = store.CreateUser(payload.Email, string(hash), payload.UserRole)
 		if err != nil {
 			fmt.Println("DB ERROR:", err)
 			http.Error(w, "Database failed to create user", http.StatusInternalServerError)

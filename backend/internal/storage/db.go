@@ -41,12 +41,13 @@ func InitDB(connSTr string) (*sql.DB, error) {
         id SERIAL PRIMARY KEY,
         email VARCHAR(150) UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		userRole VARCHAR(150) NOT NULL
     )
 	`
 	_, err = db.Exec(userQuery)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create table: %v", err)
+		return nil, fmt.Errorf("Failed to create users table: %v", err)
 	}
 	log.Println("Schema initialized.")
 	return db, nil

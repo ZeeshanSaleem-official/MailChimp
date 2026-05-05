@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, Lock, User, UserPlus, Loader2 } from "lucide-react";
+import { Mail, Lock, User, UserPlus, Loader2, ShieldCheck } from "lucide-react";
 import apiClient from "../api/axios";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -8,6 +8,7 @@ export default function SignUp() {
     name: "",
     email: "",
     password: "",
+    userRole: "",
   });
   const navigate = useNavigate();
   const [err, setErr] = useState(null);
@@ -26,9 +27,11 @@ export default function SignUp() {
       console.log("Account Initialized:", response.data);
       navigate("/login");
     } catch (error) {
-      console.error("Signup failed:", err);
-      setError(
-        err.response?.data?.message ||
+      // Fixed error variable naming
+      console.error("Signup failed:", error);
+      setErr(
+        // Fixed state setter (was setError)
+        error.response?.data?.message ||
           "Failed to initialize account. Try again.",
       );
     } finally {
@@ -113,9 +116,34 @@ export default function SignUp() {
             </div>
           </div>
 
+          {/* User Role Dropdown */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              User Role
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <ShieldCheck className="h-5 w-5 text-slate-400" />
+              </div>
+              <select
+                name="userRole"
+                value={formData.userRole}
+                onChange={handleChange}
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all appearance-none"
+                required
+              >
+                <option value="" disabled>
+                  Select a role...
+                </option>
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+          </div>
+
           <button
             type="submit"
-            disabled={loading} // 🚨 THIS KILLS THE DOUBLE FIRE 🚨
+            disabled={loading}
             className={`w-full mt-2 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md
               ${loading ? "bg-slate-400 cursor-not-allowed" : "bg-slate-800 hover:bg-slate-900"}`}
           >

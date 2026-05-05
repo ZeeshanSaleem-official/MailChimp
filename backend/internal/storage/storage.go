@@ -6,6 +6,6 @@ type Storage interface {
 	GetAllRecipients(segment string) ([]types.RecipientAPI, error)
 	UpdateEmailStatus(email string, status string) error
 	AddRecipients(name string, email string, segment string) error
-	CreateUser(email string, passwordHash string) error
+	CreateUser(email string, passwordHash string, userRole string) error
 	GetUser(email string) (*types.User, error)
 }
