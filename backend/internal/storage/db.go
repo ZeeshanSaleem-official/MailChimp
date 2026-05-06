@@ -18,17 +18,20 @@ func InitDB(connSTr string) (*sql.DB, error) {
 		return nil, err
 	}
 	fmt.Println(" PostgreSQL Database connected successfully!")
-	// email should be unique even name or remaining fields remains same
+
+	// email, and foreign key should be unique even name or remaining fields remains same
 	// for Recipients Schema
 
 	query := `
 	CREATE TABLE IF NOT EXISTS recipients(
-	id SERIAL PRIMARY KEY,
+		id SERIAL PRIMARY KEY,
+		user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
 		name VARCHAR(100) NOT NULL,
-		email VARCHAR(150) UNIQUE NOT NULL, 
+		email VARCHAR(150)  NOT NULL, 
 		segment VARCHAR(50) DEFAULT 'general',
 		status VARCHAR(50) DEFAULT 'pending',
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE(user_id, email)
 	)
 	`
 	_, err = db.Exec(query)

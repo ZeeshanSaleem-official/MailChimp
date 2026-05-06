@@ -10,7 +10,7 @@ import (
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/storage"
 )
 
-func emailWorker(id int, ch chan types.Recipient, wg *sync.WaitGroup, camp types.Campaign, store storage.Storage) {
+func emailWorker(workerId int, userID int, ch chan types.Recipient, wg *sync.WaitGroup, camp types.Campaign, store storage.Storage) {
 	defer wg.Done()
 	for recipient := range ch {
 		smtpHost := "localhost"
@@ -25,7 +25,7 @@ func emailWorker(id int, ch chan types.Recipient, wg *sync.WaitGroup, camp types
 		// executing the email using template dynamically
 		body, err := executeEmail(dataForTemplate, camp.TemplateFile)
 		if err != nil {
-			fmt.Printf("Worker: %d Error executing template for %s: %v\n", id, recipient.Email, err)
+			fmt.Printf("Worker: %d Error executing template for %s: %v\n", workerId, recipient.Email, err)
 			continue
 		}
 		// fmt.Printf("Worker: %d: Sending email to: %s \r\n", id, recipient.Email)
@@ -39,14 +39,14 @@ func emailWorker(id int, ch chan types.Recipient, wg *sync.WaitGroup, camp types
 		err = smtp.SendMail(smtpHost+":"+smtpPort, nil, "zeeshan@gmail.com", []string{recipient.Email}, []byte(finalmessage))
 		// Update email Status
 		if err != nil {
-			fmt.Printf("Worker: %d Error during sending email for %s: %v\n", id, recipient.Email, err)
-			store.UpdateEmailStatus(recipient.Email, "failed")
+			fmt.Printf("Worker: %d Error during sending email for %s: %v\n", workerId, recipient.Email, err)
+			store.UpdateEmailStatus(userID, recipient.Email, "failed")
 			continue
 		}
 		// Update the email Status function
-		err = store.UpdateEmailStatus(recipient.Email, "sent")
+		err = store.UpdateEmailStatus(userID, recipient.Email, "sent")
 		if err != nil {
-			fmt.Printf("Worker: %d Error during updating email status for %s: %v\n", id, recipient.Email, err)
+			fmt.Printf("Worker: %d Error during updating email status for %s: %v\n", workerId, recipient.Email, err)
 			continue
 		}
 		time.Sleep(50 * time.Millisecond)

@@ -1,11 +1,16 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
 	"github.com/golang-jwt/jwt/v5"
 )
+
+type contextKey string
+
+const UserIDKey contextKey = "userID"
 
 func AuthMiddleware(jwtSecret string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -27,6 +32,25 @@ func AuthMiddleware(jwtSecret string, next http.HandlerFunc) http.HandlerFunc {
 			http.Error(w, "Invalid  or expired token", http.StatusUnauthorized)
 			return
 		}
-		next(w, r)
+
+		// Extract the claims (the data payload inside the JWT)
+		claims, ok := parsedToken.Claims.(jwt.MapClaims)
+
+		if !ok {
+			http.Error(w, "Invalid Token Payload", http.StatusUnauthorized)
+			return
+		}
+		// extracting user ID
+		userIDFloat, ok := claims["userID"].(float64)
+
+		if !ok {
+			http.Error(w, "User ID is missing token", http.StatusUnauthorized)
+			return
+		}
+		userID := int(userIDFloat)
+		// Inject the userID into the request Context
+		ctx := context.WithValue(r.Context(), userIDFloat, userID)
+		// send the context
+		next(w, r.WithContext(ctx))
 	}
 }

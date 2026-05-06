@@ -57,30 +57,31 @@ func main() {
 	store := postgres.NewPostgresStore(db)
 
 	// CSV to DB
-	importCSVtoDB("./mail.csv", db)
+	importCSVtoDB(1, "./mail.csv", db)
 
 	// Scheduling the campaign
 	s := gocron.NewScheduler(time.Local)
 	s.Every(1).Minute().Do(func() {
 		fmt.Printf("\n [%v] Scheduled Task Triggered: Starting Campaign '%s'...\n", time.Now().Format("15:04:05"), myCampaign.Name)
-		runCampaign(store, db, myCampaign)
+		runCampaign(1, store, db, myCampaign)
 		fmt.Println(" Campaign execution finished. Waiting for next schedule...")
 	})
 	fmt.Println(" Scheduler started! Waiting for the next scheduled run...")
 	s.StartAsync()
 
 	// Create the bridge function for the POST route
-	triggerCallback := func(req types.Campaign) {
-		runCampaign(store, db, req)
+	triggerCallback := func(userID int, req types.Campaign) {
+		runCampaign(userID, store, db, req)
 	}
 	// Create a dedicated router
 	mux := http.NewServeMux()
 
 	// Register the Clean Handlers
-	mux.HandleFunc("/api/recipients", handlers.GetRecipientHandler(store))
-	mux.HandleFunc("/api/campaign/run", handlers.RunCampaignHandler(triggerCallback))
-	mux.HandleFunc("/api/recipients/upload", handlers.UploadCSVHandler(store))
+	mux.HandleFunc("/api/recipients", handlers.AuthMiddleware(cfg.JWTSecret, handlers.GetRecipientHandler(store)))
+	mux.HandleFunc("/api/campaign/run", handlers.AuthMiddleware(cfg.JWTSecret, handlers.RunCampaignHandler(triggerCallback)))
+	mux.HandleFunc("/api/recipients/upload", handlers.AuthMiddleware(cfg.JWTSecret, handlers.UploadCSVHandler(store)))
 	mux.HandleFunc("/api/campaign/send", handlers.AuthMiddleware(cfg.JWTSecret, handlers.SendCampaignHandler(store, testMailer)))
+
 	mux.HandleFunc("/api/signup", handlers.SignUpHandlers(store))
 	mux.HandleFunc("/api/login", handlers.LoginHandlers(store, cfg.JWTSecret))
 	mux.HandleFunc("/api/logout", handlers.LogoutHandlers())
@@ -101,17 +102,17 @@ func main() {
 }
 
 // Run campaign dynamically
-func runCampaign(store storage.Storage, db *sql.DB, camp types.Campaign) {
+func runCampaign(userID int, store storage.Storage, db *sql.DB, camp types.Campaign) {
 	recipientchannel := make(chan types.Recipient)
 	go func() {
-		fetchRecipientsFromDB(recipientchannel, db, camp.TargetSegment)
+		fetchRecipientsFromDB(userID, recipientchannel, db, camp.TargetSegment)
 	}()
 
 	workerCount := 5
 	var wg sync.WaitGroup
 	for i := 1; i <= workerCount; i++ {
 		wg.Add(1)
-		go emailWorker(i, recipientchannel, &wg, camp, store)
+		go emailWorker(i, userID, recipientchannel, &wg, camp, store)
 	}
 	wg.Wait()
 }

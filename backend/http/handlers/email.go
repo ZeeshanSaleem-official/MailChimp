@@ -15,10 +15,16 @@ import (
 // Get Recipients for sending emails
 func GetRecipientHandler(store storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := r.Context().Value(UserIDKey).(int)
+		if !ok {
+			// If the ID isn't there, cleanly reject the request instead of crashing the server
+			http.Error(w, "Unauthorized: User ID missing from context", http.StatusUnauthorized)
+			return
+		}
 		segmentFilter := r.URL.Query().Get("segment")
 
 		// Ask the storage interface for the data, no SQL needed here!
-		users, err := store.GetAllRecipients(segmentFilter)
+		users, err := store.GetAllRecipients(userID, segmentFilter)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -29,7 +35,7 @@ func GetRecipientHandler(store storage.Storage) http.HandlerFunc {
 }
 
 // Run Campaign manually for the Postman(later will be done using the frontend)
-func RunCampaignHandler(triggerWorker func(types.Campaign)) http.HandlerFunc {
+func RunCampaignHandler(triggerWorker func(userID int, camp types.Campaign)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if r.Method == "OPTIONS" {
@@ -38,6 +44,12 @@ func RunCampaignHandler(triggerWorker func(types.Campaign)) http.HandlerFunc {
 		}
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method should be POST", http.StatusMethodNotAllowed)
+			return
+		}
+		//Extract dynamic userID from the request context!
+		userID, ok := r.Context().Value(UserIDKey).(int)
+		if !ok {
+			http.Error(w, "Unauthorized: User ID missing from context", http.StatusUnauthorized)
 			return
 		}
 
@@ -52,11 +64,16 @@ func RunCampaignHandler(triggerWorker func(types.Campaign)) http.HandlerFunc {
 			newCampaign.TemplateFile = "promo.tmpl"
 		}
 
-		// Trigger the Go workers in the background via the callback
-		go func() {
-			triggerWorker(newCampaign)
-		}()
+		// // Trigger the Go workers in the background via the callback
+		// go func() {
+		// 	triggerWorker(userID, newCampaign)
+		// }()
 
+		// Trigger the Go worker and pass the userID into it!
+		// We pass userID into the anonymous function safely
+		go func(uID int, camp types.Campaign) {
+			triggerWorker(uID, camp)
+		}(userID, newCampaign)
 		w.WriteHeader(http.StatusOK)
 
 		response := map[string]string{
@@ -71,12 +88,18 @@ func RunCampaignHandler(triggerWorker func(types.Campaign)) http.HandlerFunc {
 func UploadCSVHandler(store storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		if r.Method == "Options" {
+		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		// Extract dynamic userID from the request context!
+		userID, ok := r.Context().Value(UserIDKey).(int)
+		if !ok {
+			http.Error(w, "Unauthorized: User ID missing from context", http.StatusUnauthorized)
 			return
 		}
 		// Parse the multipart form (Max upload size: 10MB)
@@ -109,7 +132,7 @@ func UploadCSVHandler(store storage.Storage) http.HandlerFunc {
 				http.Error(w, "Error during reading file from csv", http.StatusBadRequest)
 				return
 			}
-			err = store.AddRecipients(record[0], record[1], record[2])
+			err = store.AddRecipients(userID, record[0], record[1], record[2])
 			if err != nil {
 				http.Error(w, "Error during adding record in Database", http.StatusBadRequest)
 				return
@@ -131,6 +154,12 @@ func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer) http.Handle
 			http.Error(w, "Method not allowed in the send Capmaign Handler", http.StatusMethodNotAllowed)
 			return
 		}
+		// Extract dynamic userID from the request context!
+		userID, ok := r.Context().Value(UserIDKey).(int)
+		if !ok {
+			http.Error(w, "Unauthorized: User ID missing from context", http.StatusUnauthorized)
+			return
+		}
 		// Struct for the get data from react UI
 		var payload struct {
 			Subject string `json:"subject"`
@@ -144,7 +173,7 @@ func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer) http.Handle
 		}
 
 		// Call the recipients function for getting users of segment
-		users, err := store.GetAllRecipients(payload.Segment)
+		users, err := store.GetAllRecipients(userID, payload.Segment)
 		if err != nil {
 			http.Error(w, "Error while calling backend for users", http.StatusInternalServerError)
 			return
@@ -155,10 +184,10 @@ func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer) http.Handle
 				err := mail.SendEmail(user.Email, payload.Subject, payload.Body)
 				if err != nil {
 					fmt.Printf("Error while sending mail to %s\r\n%v\n", user.Email, err)
-					_ = store.UpdateEmailStatus(user.Email, "failed")
+					_ = store.UpdateEmailStatus(userID, user.Email, "failed")
 					continue
 				}
-				updateErr := store.UpdateEmailStatus(user.Email, "sent")
+				updateErr := store.UpdateEmailStatus(userID, user.Email, "sent")
 				if updateErr != nil {
 					fmt.Printf("Email sent to %s, but DB update failed: %v\n", user.Email, updateErr)
 				}
