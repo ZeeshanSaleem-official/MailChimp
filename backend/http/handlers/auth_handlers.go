@@ -18,6 +18,7 @@ type AuthPayload struct {
 	UserRole string `json:"userRole"`
 }
 
+// Sign up Hanlder
 func SignUpHandlers(store storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -53,6 +54,7 @@ func SignUpHandlers(store storage.Storage) http.HandlerFunc {
 	}
 }
 
+// Generateing cookie token
 func GenerateToken(user types.User, secret string) (string, error) {
 	// Create the claims (the data inside the token)
 	claims := jwt.MapClaims{
@@ -66,6 +68,7 @@ func GenerateToken(user types.User, secret string) (string, error) {
 	return token.SignedString([]byte(secret))
 }
 
+// Log in Handler
 func LoginHandlers(store storage.Storage, jwtSecret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var payload AuthPayload
@@ -112,5 +115,25 @@ func LoginHandlers(store storage.Storage, jwtSecret string) http.HandlerFunc {
 			"role":    u.Role,
 		})
 
+	}
+}
+
+//Logout Handler
+
+func LogoutHandlers() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cookie := &http.Cookie{
+			Name:     "jwt",
+			Value:    " ",
+			Expires:  time.Unix(0, 0),
+			MaxAge:   -1,
+			HttpOnly: true,
+			Secure:   false,
+			Path:     "/",
+			SameSite: http.SameSiteLaxMode,
+		}
+		http.SetCookie(w, cookie)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"Message":"Successfully Logged out}`))
 	}
 }

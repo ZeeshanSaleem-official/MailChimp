@@ -75,6 +75,7 @@ func main() {
 	}
 	// Create a dedicated router
 	mux := http.NewServeMux()
+
 	// Register the Clean Handlers
 	mux.HandleFunc("/api/recipients", handlers.GetRecipientHandler(store))
 	mux.HandleFunc("/api/campaign/run", handlers.RunCampaignHandler(triggerCallback))
@@ -82,6 +83,7 @@ func main() {
 	mux.HandleFunc("/api/campaign/send", handlers.AuthMiddleware(cfg.JWTSecret, handlers.SendCampaignHandler(store, testMailer)))
 	mux.HandleFunc("/api/signup", handlers.SignUpHandlers(store))
 	mux.HandleFunc("/api/login", handlers.LoginHandlers(store, cfg.JWTSecret))
+	mux.HandleFunc("/api/logout", handlers.LogoutHandlers())
 
 	fmt.Println(" Web Server is running on http://localhost:8080")
 	fmt.Println(" Scheduler is running in the background...")
@@ -95,7 +97,6 @@ func main() {
 	// Wrap  mux with the CORS handler
 	handler := c.Handler(mux)
 	// Start the server using the wrapped handler
-	fmt.Println("🚨 CORS FIX VERSION 2 IS ALIVE AND RUNNING! 🚨")
 	log.Fatal(http.ListenAndServe(":8080", handler))
 }
 
