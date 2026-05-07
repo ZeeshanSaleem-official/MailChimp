@@ -52,6 +52,25 @@ func InitDB(connSTr string) (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create users table: %v", err)
 	}
+
+	// For storing Campaign Data
+	campaignQuery := `
+    CREATE TABLE IF NOT EXISTS campaigns (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(150) NOT NULL,
+        subject VARCHAR(255) NOT NULL,
+        template_file VARCHAR(100) DEFAULT 'promo.tmpl',
+        target_segment VARCHAR(50) DEFAULT 'general',
+        status VARCHAR(50) DEFAULT 'pending',
+        scheduled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    `
+	_, err = db.Exec(campaignQuery)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create campaigns data table: %v", err)
+	}
+
 	log.Println("Schema initialized.")
 	return db, nil
 }

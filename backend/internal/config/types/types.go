@@ -11,10 +11,13 @@ type EmailData struct {
 	Camp Campaign
 }
 type Campaign struct {
+	ID            int    `json:"id"`
+	UserID        int    `json:"user_id"`
 	Name          string `json:"name"`
 	Subject       string `json:"subject"`
 	TemplateFile  string `json:"templateFile"`
 	TargetSegment string `json:"segment"`
+	Status        string `json:"status"`
 }
 type RecipientAPI struct {
 	ID      int    `json:"id"`
