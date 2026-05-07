@@ -52,7 +52,7 @@ func (p *PostgresStore) UpdateEmailStatus(userID int, email string, status strin
 
 // Add Recipients(from UI to Database) function
 func (p *PostgresStore) AddRecipients(userID int, name string, email string, segment string) error {
-	query := "INSERT INTO recipients (user_id,name, email, segment) VALUES ($1,$2,$3,$4) ON CONFLICT (email) DO NOTHING"
+	query := "INSERT INTO recipients (user_id,name, email, segment) VALUES ($1,$2,$3,$4) ON CONFLICT (user_id, email) DO NOTHING"
 	_, err := p.db.Exec(query, userID, name, email, segment)
 	if err != nil {
 		return err
@@ -81,4 +81,30 @@ func (p *PostgresStore) GetUser(email string) (*types.User, error) {
 		return nil, err
 	}
 	return &u, nil
+}
+
+// Fetch Campaigns that are ready to send
+func (p *PostgresStore) GetPendingCampaigns() ([]types.Campaign, error) {
+	query := `SELECT id, user_id, name, subject, template_file, target_segment, status FROM campaigns WHERE status = 'pending' AND scheduled_at <= NOW()`
+	rows, err := p.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var campaigns []types.Campaign
+	for rows.Next() {
+		var c types.Campaign
+		err := rows.Scan(&c.ID, &c.UserID, &c.Name, &c.Subject, &c.TemplateFile, &c.TargetSegment, &c.Status)
+		if err != nil {
+			continue
+		}
+		campaigns = append(campaigns, c)
+	}
+	return campaigns, nil
+}
+func (p *PostgresStore) UpdateCampaignStatus(campaignID int, status string) error {
+	query := `UPDATE campaigns SET status = $1 WHERE id = $2`
+	_, err := p.db.Exec(query, status, campaignID)
+	return err
 }
