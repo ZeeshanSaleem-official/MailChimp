@@ -1,6 +1,7 @@
 import { useState } from "react";
+import apiClient from "../api/axios"; // 🚨 1. Import your custom Axios client
 
-export default function uploadContact({ onUploadSuccess }) {
+export default function UploadContacts({ onUploadSuccess }) {
   const [csvFile, setCsvFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState(null);
@@ -16,8 +17,8 @@ export default function uploadContact({ onUploadSuccess }) {
       );
     }
   };
+
   const handleUpload = async () => {
-    console.log("TODO: fetch() logic using FormData here!");
     if (!csvFile) {
       return;
     }
@@ -28,17 +29,21 @@ export default function uploadContact({ onUploadSuccess }) {
     formData.append("file", csvFile);
 
     try {
-      const response = await fetch(
-        "http://localhost:8080/api/recipients/upload",
+      // Use apiClient.post instead of fetch!
+      // This automatically attaches your JWT cookie and handles the POST method
+      const response = await apiClient.post(
+        "/api/recipients/upload",
         formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
       );
-      if (!response.ok) {
-        throw new Error(`Upload Failed due to ${response.statusText}`);
-      }
-      const data = await response.json();
+
       setUploadMessage({
         type: "success",
-        text: " File Uploaded Succesfully!",
+        text: "File Uploaded Successfully!",
       });
       setCsvFile(null);
 
@@ -49,9 +54,11 @@ export default function uploadContact({ onUploadSuccess }) {
       console.error("Uploading error :", err);
       setUploadMessage({
         type: "error",
-        text: " Failed to Upload the file to backend server!",
+        text:
+          err.response?.data || "Failed to Upload the file to backend server!",
       });
-      setIsUploading(false);
+    } finally {
+      setIsUploading(false); //  Ensure loading state resets even on success
     }
   };
 
@@ -87,9 +94,10 @@ export default function uploadContact({ onUploadSuccess }) {
           className={`w-full mt-6 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-md flex items-center justify-center gap-2
             ${isUploading ? "bg-emerald-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 hover:shadow-lg"}`}
         >
-          {isUploading ? "Uploading to server" : "Upload to Database"}
+          {isUploading ? "Uploading to server..." : "Upload to Database"}
         </button>
       )}
+
       {uploadMessage && (
         <div
           className={`mt-4 p-3 rounded-lg text-sm font-medium border ${
