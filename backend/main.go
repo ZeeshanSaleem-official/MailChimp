@@ -63,8 +63,31 @@ func main() {
 	s := gocron.NewScheduler(time.Local)
 	s.Every(1).Minute().Do(func() {
 		fmt.Printf("\n [%v] Scheduled Task Triggered: Starting Campaign '%s'...\n", time.Now().Format("15:04:05"), myCampaign.Name)
-		runCampaign(1, store, db, myCampaign)
-		fmt.Println(" Campaign execution finished. Waiting for next schedule...")
+		// runCampaign(1, store, db, myCampaign)
+		// fmt.Println(" Campaign execution finished. Waiting for next schedule...")
+
+		pendingCampaigns, err := store.GetPendingCampaigns()
+		if err != nil {
+			fmt.Println("Error fetching campaigns from DB:", err)
+			return
+		}
+		if len(pendingCampaigns) == 0 {
+			fmt.Println(" No pending campaigns found. Going back to sleep.")
+			return
+		}
+		for _, camp := range pendingCampaigns {
+			fmt.Printf(" Firing Campaign: '%s' for User ID: %d\n", camp.Name, camp.UserID)
+			err := store.UpdateCampaignStatus(camp.ID, "processing")
+			if err != nil {
+				fmt.Printf("Error sending campaigns for user ID : %d\n to email recipient: %d", camp.UserID, err)
+				continue
+			}
+			// run campaign
+			runCampaign(camp.UserID, store, db, camp)
+			// mark the campaign to completed
+			store.UpdateCampaignStatus(camp.ID, "completed")
+			fmt.Printf("✅ Campaign '%s' completed successfully!\n", camp.Name)
+		}
 	})
 	fmt.Println(" Scheduler started! Waiting for the next scheduled run...")
 	s.StartAsync()

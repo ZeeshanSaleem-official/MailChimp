@@ -19,25 +19,6 @@ func InitDB(connSTr string) (*sql.DB, error) {
 	}
 	fmt.Println(" PostgreSQL Database connected successfully!")
 
-	// email, and foreign key should be unique even name or remaining fields remains same
-	// for Recipients Schema
-
-	query := `
-	CREATE TABLE IF NOT EXISTS recipients(
-		id SERIAL PRIMARY KEY,
-		user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
-		name VARCHAR(100) NOT NULL,
-		email VARCHAR(150)  NOT NULL, 
-		segment VARCHAR(50) DEFAULT 'general',
-		status VARCHAR(50) DEFAULT 'pending',
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		UNIQUE(user_id, email)
-	)
-	`
-	_, err = db.Exec(query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create table: %v", err)
-	}
 	// for user Schema
 	userQuery := `
 	CREATE TABLE IF NOT EXISTS users (
@@ -51,6 +32,26 @@ func InitDB(connSTr string) (*sql.DB, error) {
 	_, err = db.Exec(userQuery)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create users table: %v", err)
+	}
+
+	// email, and foreign key should be unique even name or remaining fields remains same
+	// for Recipients Schema
+
+	query := `
+	CREATE TABLE IF NOT EXISTS recipients(
+		id SERIAL PRIMARY KEY,
+		user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		name VARCHAR(100) NOT NULL,
+		email VARCHAR(150)  NOT NULL, 
+		segment VARCHAR(50) DEFAULT 'general',
+		status VARCHAR(50) DEFAULT 'pending',
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE(user_id, email)
+	)
+	`
+	_, err = db.Exec(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create table: %v", err)
 	}
 
 	// For storing Campaign Data

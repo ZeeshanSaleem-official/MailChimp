@@ -103,6 +103,8 @@ func (p *PostgresStore) GetPendingCampaigns() ([]types.Campaign, error) {
 	}
 	return campaigns, nil
 }
+
+// Updating Campaign Status
 func (p *PostgresStore) UpdateCampaignStatus(campaignID int, status string) error {
 	query := `UPDATE campaigns SET status = $1 WHERE id = $2`
 	_, err := p.db.Exec(query, status, campaignID)
