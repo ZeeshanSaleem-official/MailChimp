@@ -16,7 +16,7 @@ func AuthMiddleware(jwtSecret string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Grab the Authorization token from cookie
 		cookie, err := r.Cookie("jwt")
-		if cookie.Value == "" {
+		if err != nil {
 			http.Error(w, "Missing authentication cookie", http.StatusUnauthorized)
 			return
 		}
@@ -49,7 +49,7 @@ func AuthMiddleware(jwtSecret string, next http.HandlerFunc) http.HandlerFunc {
 		}
 		userID := int(userIDFloat)
 		// Inject the userID into the request Context
-		ctx := context.WithValue(r.Context(), userIDFloat, userID)
+		ctx := context.WithValue(r.Context(), UserIDKey, userID)
 		// send the context
 		next(w, r.WithContext(ctx))
 	}

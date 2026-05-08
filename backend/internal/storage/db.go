@@ -4,30 +4,45 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time" //  Need this for the time.Sleep() pause
 
 	_ "github.com/lib/pq"
 )
 
 func InitDB(connSTr string) (*sql.DB, error) {
-	db, err := sql.Open("postgres", connSTr)
-	if err != nil {
-		return nil, err
+	var db *sql.DB
+	var err error
+
+	//  Try to connect up to 5 times
+	for i := 1; i <= 5; i++ {
+		db, err = sql.Open("postgres", connSTr)
+		if err == nil {
+			err = db.Ping()
+			if err == nil {
+				break // Success! Break out of the loop
+			}
+		}
+
+		fmt.Printf("Database not ready, retrying in 2 seconds (Attempt %d/5)...\n", i)
+		time.Sleep(2 * time.Second)
 	}
-	err = db.Ping()
+
+	// If it fails after 5 attempts, kill the server
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to connect to database after 5 attempts: %v", err)
 	}
+
 	fmt.Println(" PostgreSQL Database connected successfully!")
 
 	// for user Schema
 	userQuery := `
 	CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        email VARCHAR(150) UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		id SERIAL PRIMARY KEY,
+		email VARCHAR(150) UNIQUE NOT NULL,
+		password_hash TEXT NOT NULL,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		userRole VARCHAR(150) NOT NULL
-    )
+	)
 	`
 	_, err = db.Exec(userQuery)
 	if err != nil {
@@ -56,17 +71,17 @@ func InitDB(connSTr string) (*sql.DB, error) {
 
 	// For storing Campaign Data
 	campaignQuery := `
-    CREATE TABLE IF NOT EXISTS campaigns (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        name VARCHAR(150) NOT NULL,
-        subject VARCHAR(255) NOT NULL,
-        template_file VARCHAR(100) DEFAULT 'promo.tmpl',
-        target_segment VARCHAR(50) DEFAULT 'general',
-        status VARCHAR(50) DEFAULT 'pending',
-        scheduled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    `
+	CREATE TABLE IF NOT EXISTS campaigns (
+		id SERIAL PRIMARY KEY,
+		user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		name VARCHAR(150) NOT NULL,
+		subject VARCHAR(255) NOT NULL,
+		template_file VARCHAR(100) DEFAULT 'promo.tmpl',
+		target_segment VARCHAR(50) DEFAULT 'general',
+		status VARCHAR(50) DEFAULT 'pending',
+		scheduled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	)
+	`
 	_, err = db.Exec(campaignQuery)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create campaigns data table: %v", err)

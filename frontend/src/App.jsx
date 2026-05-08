@@ -35,9 +35,15 @@ function App() {
       setError(null);
     } catch (err) {
       console.error("Fetch error:", err);
-      setError(
-        "Cannot connect to Go Backend. Make sure your Go server is running on port 8080!",
-      );
+
+      // Look at the ACTUAL status code the Go server sent back!
+      if (err.response && err.response.status === 401) {
+        setError("You are not logged in! Please return to the login page.");
+      } else if (err.response && err.response.data) {
+        setError(`Backend Error: ${err.response.data}`);
+      } else {
+        setError("Cannot connect to Go Backend. Is port 8080 running?");
+      }
     } finally {
       setLoading(false);
     }

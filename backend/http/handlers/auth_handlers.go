@@ -58,9 +58,9 @@ func SignUpHandlers(store storage.Storage) http.HandlerFunc {
 func GenerateToken(user types.User, secret string) (string, error) {
 	// Create the claims (the data inside the token)
 	claims := jwt.MapClaims{
-		"id":    user.ID,
-		"email": user.Email,
-		"exp":   time.Now().Add(time.Hour * 24).Unix(),
+		"userID": user.ID,
+		"email":  user.Email,
+		"exp":    time.Now().Add(time.Hour * 24).Unix(),
 	}
 	// Create the token blueprint
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
