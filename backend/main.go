@@ -80,8 +80,7 @@ func main() {
 				continue
 			}
 			// run campaign
-			runCampaign(camp.UserID, store, db, camp, cfg.SMTP.Host, cfg.SMTP.Port)
-			// mark the campaign to completed
+			runCampaign(camp.UserID, store, db, camp, cfg.SMTP.Host, cfg.SMTP.Port, cfg.SMTP.Username, cfg.SMTP.Password) // mark the campaign to completed
 			store.UpdateCampaignStatus(camp.ID, "completed")
 			fmt.Printf("✅ Campaign '%s' completed successfully!\n", camp.Name)
 		}
@@ -91,7 +90,7 @@ func main() {
 
 	// Create the bridge function for the POST route
 	triggerCallback := func(userID int, req types.Campaign) {
-		runCampaign(userID, store, db, req, cfg.SMTP.Host, cfg.SMTP.Port)
+		runCampaign(userID, store, db, req, cfg.SMTP.Host, cfg.SMTP.Port, cfg.SMTP.Username, cfg.SMTP.Password)
 	}
 	// Create a dedicated router
 	mux := http.NewServeMux()
@@ -122,7 +121,9 @@ func main() {
 }
 
 // Run campaign dynamically
-func runCampaign(userID int, store storage.Storage, db *sql.DB, camp types.Campaign, smtpHost string, smtpPort int) {
+func runCampaign(userID int, store storage.Storage, db *sql.DB, camp types.Campaign, smtpHost string, smtpPort int, smtpUser string, smtpPass string) {
+	cfg := config.MustLoad("local.yml")
+
 	recipientchannel := make(chan types.Recipient)
 	go func() {
 		fetchRecipientsFromDB(userID, recipientchannel, db, camp.TargetSegment)
@@ -132,7 +133,7 @@ func runCampaign(userID int, store storage.Storage, db *sql.DB, camp types.Campa
 	var wg sync.WaitGroup
 	for i := 1; i <= workerCount; i++ {
 		wg.Add(1)
-		go emailWorker(i, userID, recipientchannel, &wg, camp, store, smtpHost, smtpPort)
+		go emailWorker(i, userID, recipientchannel, &wg, camp, store, smtpHost, smtpPort, cfg.SMTP.Username, cfg.SMTP.Password)
 	}
 	wg.Wait()
 }

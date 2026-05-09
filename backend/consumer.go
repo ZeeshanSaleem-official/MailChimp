@@ -10,7 +10,7 @@ import (
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/storage"
 )
 
-func emailWorker(workerId int, userID int, ch chan types.Recipient, wg *sync.WaitGroup, camp types.Campaign, store storage.Storage, smtpHost string, smtpPort int) {
+func emailWorker(workerId int, userID int, ch chan types.Recipient, wg *sync.WaitGroup, camp types.Campaign, store storage.Storage, smtpHost string, smtpPort int, smtpUser string, smtpPass string) {
 	defer wg.Done()
 	for recipient := range ch {
 		// smtpHost := "localhost"
@@ -39,8 +39,13 @@ func emailWorker(workerId int, userID int, ch chan types.Recipient, wg *sync.Wai
 		// Create the address string by formatting the string and integer together
 		addr := fmt.Sprintf("%s:%d", smtpHost, smtpPort)
 
+		//  Create the Authentication object!
+		auth := smtp.PlainAuth("", smtpUser, smtpPass, smtpHost)
+
+		//  Pass 'auth', and use smtpUser as the sender
+		err = smtp.SendMail(addr, auth, smtpUser, []string{recipient.Email}, []byte(finalmessage))
 		// Use the new addr variable
-		err = smtp.SendMail(addr, nil, "zeeshan@gmail.com", []string{recipient.Email}, []byte(finalmessage))
+		// err = smtp.SendMail(addr, nil, "zeeshan@gmail.com", []string{recipient.Email}, []byte(finalmessage))
 		// Update email Status
 		if err != nil {
 			fmt.Printf("Worker: %d Error during sending email for %s: %v\n", workerId, recipient.Email, err)
