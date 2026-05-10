@@ -13,6 +13,7 @@ import {
   Clock,
   RefreshCw,
   AlertCircle,
+  RefreshCcw,
 } from "lucide-react";
 import apiClient from "../api/axios";
 
@@ -33,6 +34,7 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("all");
+  const [resendingId, setResendingId] = useState(null);
 
   // Fetch recipients from the DB
   const fetchRecipients = async () => {
@@ -55,6 +57,23 @@ export default function UserDashboard() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Resend Logic
+  const handleResend = async (userEmail, userId) => {
+    setResendingId(userId);
+    try {
+      // Send the EMAIL to Go
+      await apiClient.post("/api/recipients/resend", {
+        email: userEmail,
+      });
+
+      fetchRecipients(); // Refresh the table to show the green "Sent" badge!
+    } catch (err) {
+      console.error("Resend failed:", err);
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -197,12 +216,15 @@ export default function UserDashboard() {
                   <th className="p-4 font-semibold">Email Address</th>
                   <th className="p-4 font-semibold">Segment</th>
                   <th className="p-4 font-semibold">Status</th>
+                  <th className="p-4 font-semibold w-24 text-center">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {recipients.length === 0 && !loading && !error && (
                   <tr>
-                    <td colSpan="5" className="p-12 text-center text-slate-500">
+                    <td colSpan="6" className="p-12 text-center text-slate-500">
                       <div className="flex flex-col items-center justify-center gap-3">
                         <Users size={32} className="text-slate-300" />
                         <p className="font-medium">
@@ -234,6 +256,23 @@ export default function UserDashboard() {
                     </td>
                     <td className="p-4">
                       <StatusBadge status={user.status} />
+                    </td>
+
+                    <td className="p-4 flex justify-center">
+                      {user.status === "failed" && (
+                        <button
+                          onClick={() => handleResend(user.email, user.id)}
+                          disabled={resendingId === user.id}
+                          title="Retry sending email"
+                          className="flex items-center justify-center p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors border border-rose-100 disabled:opacity-50"
+                        >
+                          {resendingId === user.id ? (
+                            <RefreshCw size={16} className="animate-spin" />
+                          ) : (
+                            <RefreshCcw size={16} />
+                          )}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

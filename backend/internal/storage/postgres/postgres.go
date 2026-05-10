@@ -18,10 +18,9 @@ func NewPostgresStore(db *sql.DB) *PostgresStore {
 func (p *PostgresStore) GetAllRecipients(userID int, segment string) ([]types.RecipientAPI, error) {
 	var rows *sql.Rows
 	var err error
-	if segment == "" {
+	if segment == "" || segment == "all" {
 		query := "SELECT id, name, email, segment, status FROM recipients WHERE user_id = $1 ORDER BY id ASC"
 		rows, err = p.db.Query(query, userID)
-
 	} else {
 		query := `SELECT id, name, email, segment, status FROM recipients WHERE user_id = $1 AND segment = $2`
 		rows, err = p.db.Query(query, userID, segment)

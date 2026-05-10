@@ -16,14 +16,12 @@ export default function QuickComposeCampaign() {
     e.preventDefault();
     setStatus("loading");
     try {
-      const response = await apiClient.get("/api/campaign/send", {
+      const response = await apiClient.post("/api/campaign/send", {
         subject: subject,
         body: body,
         segment: segment,
       });
-      if (!response.ok) {
-        throw new Error("Failed to Send Campagin");
-      }
+
       setStatus("success");
       // Just Clean up the form for next iteration
       setSubject("");

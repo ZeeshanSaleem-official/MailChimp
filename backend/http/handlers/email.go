@@ -34,7 +34,7 @@ func GetRecipientHandler(store storage.Storage) http.HandlerFunc {
 	}
 }
 
-// Run Campaign manually for the Postman(later will be done using the frontend)
+// Run Campaign manually
 func RunCampaignHandler(triggerWorker func(userID int, camp types.Campaign)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -143,6 +143,8 @@ func UploadCSVHandler(store storage.Storage) http.HandlerFunc {
 	}
 
 }
+
+// For sending the campaign
 func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -196,5 +198,47 @@ func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer) http.Handle
 		// After successful send write header status to OK!
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"success", "message":"Campaign dispatched!"}`))
+	}
+}
+
+func ResendEmailHandler(store storage.Storage, mail *mailer.Mailer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not Allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		// Extract userID for authentication and authorization
+		userID, ok := r.Context().Value("userIDKey").(int)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		// struct for recipients email
+		var payload struct {
+			Email string `json:"email"`
+		}
+		// Decoding of struct
+		err := json.NewDecoder(r.Body).Decode(&payload)
+		if err != nil {
+			http.Error(w, "Invalid JSON Payload", http.StatusBadRequest)
+			return
+		}
+		//send email again
+		err = mail.SendEmail(payload.Email, "Tech Bird: Delivery Retry",
+			"<h1>We are retrying your email!</h1><p>Our engine successfully re-fired this message.</p>")
+		if err != nil {
+			http.Error(w, "Error while resending email", http.StatusBadRequest)
+			return
+		}
+		//updating email status
+		err = store.UpdateEmailStatus(userID, payload.Email, "sent")
+		if err != nil {
+			http.Error(w, "Email sent, but DB update failed", http.StatusInternalServerError)
+			return
+		}
+		// Return success to React
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"message": "Email resent successfully!"})
+
 	}
 }
