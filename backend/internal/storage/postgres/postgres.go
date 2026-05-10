@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/config/types"
 )
@@ -108,4 +109,22 @@ func (p *PostgresStore) UpdateCampaignStatus(campaignID int, status string) erro
 	query := `UPDATE campaigns SET status = $1 WHERE id = $2`
 	_, err := p.db.Exec(query, status, campaignID)
 	return err
+}
+
+// Delete a recipient
+func (p *PostgresStore) DeleteRecipient(userID int, recipientID int) error {
+	query := ` DELETE FROM recipients WHERE id = $1 AND user_id = $2`
+	result, err := p.db.Exec(query, recipientID, userID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("zero rows were deleted! The ID didn't match anything in the database")
+	}
+	return nil
+
 }

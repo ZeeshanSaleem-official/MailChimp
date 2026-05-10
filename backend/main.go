@@ -95,13 +95,14 @@ func main() {
 	// Create a dedicated router
 	mux := http.NewServeMux()
 
-	// Register the Clean Handlers
+	// Authorized  Handlers
 	mux.HandleFunc("/api/recipients", handlers.AuthMiddleware(cfg.JWTSecret, handlers.GetRecipientHandler(store)))
 	mux.HandleFunc("/api/campaign/run", handlers.AuthMiddleware(cfg.JWTSecret, handlers.RunCampaignHandler(triggerCallback)))
 	mux.HandleFunc("/api/recipients/upload", handlers.AuthMiddleware(cfg.JWTSecret, handlers.UploadCSVHandler(store)))
 	mux.HandleFunc("/api/campaign/send", handlers.AuthMiddleware(cfg.JWTSecret, handlers.SendCampaignHandler(store, testMailer)))
 	mux.HandleFunc("/api/recipients/resend", handlers.AuthMiddleware(cfg.JWTSecret, handlers.ResendEmailHandler(store, testMailer)))
-
+	mux.HandleFunc("/api/recipients/delete", handlers.AuthMiddleware(cfg.JWTSecret, handlers.DeleteRecipient(store)))
+	// Landing Handlers
 	mux.HandleFunc("/api/signup", handlers.SignUpHandlers(store))
 	mux.HandleFunc("/api/login", handlers.LoginHandlers(store, cfg.JWTSecret))
 	mux.HandleFunc("/api/logout", handlers.LogoutHandlers())

@@ -22,7 +22,7 @@ import {
 import apiClient from "../api/axios";
 
 // Engine Components
-// 🚨 Notice we removed the redundant ComposeCampaign! We only use the Rich Text one now.
+// Notice we removed the redundant ComposeCampaign! We only use the Rich Text one now.
 import UploadContacts from "./UploadContacts";
 import QuickComposeCampaign from "./QuickEmailComposer";
 
@@ -44,7 +44,7 @@ export default function UserDashboard() {
 
   // Action States
   const [resendingId, setResendingId] = useState(null);
-  const [deletingId, setDeletingId] = useState(null); // 🚨 New state for delete spinner
+  const [deletingId, setDeletingId] = useState(null); // New state for delete spinner
 
   // Fetch recipients from the DB
   const fetchRecipients = async () => {
@@ -90,7 +90,7 @@ export default function UserDashboard() {
     }
   };
 
-  // 🚨 New Delete Logic
+  // Delete Logic
   const handleDelete = async (userId) => {
     // Built-in browser confirmation dialog
     if (
@@ -104,7 +104,7 @@ export default function UserDashboard() {
     setDeletingId(userId);
     try {
       // Send the ID to your Go backend to be deleted
-      await apiClient.delete("/api/recipients", {
+      await apiClient.delete("/api/recipients/delete", {
         data: { id: userId },
       });
       fetchRecipients(); // Refresh the table so they disappear instantly!
@@ -142,7 +142,7 @@ export default function UserDashboard() {
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans overflow-hidden">
-      {/* 🚨 LEFT SIDEBAR NAVIGATION */}
+      {/* LEFT SIDEBAR NAVIGATION */}
       <aside className="w-64 bg-white border-r border-slate-200 flex flex-col z-20 shadow-sm shrink-0">
         <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-100">
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-md">
@@ -262,7 +262,7 @@ export default function UserDashboard() {
           {/* ========================================= */}
           {activeTab === "campaigns" && (
             <div className="animate-in fade-in duration-500 max-w-4xl">
-              {/* 🚨 Only the Rich Text Composer is rendered here now! */}
+              {/* Only the Rich Text Composer is rendered here now! */}
               <QuickComposeCampaign />
             </div>
           )}
@@ -401,7 +401,7 @@ export default function UserDashboard() {
                               </button>
                             )}
 
-                            {/* 🚨 New Delete Button (Always visible) */}
+                            {/* New Delete Button (Always visible) */}
                             <button
                               onClick={() => handleDelete(user.id)}
                               disabled={deletingId === user.id}
@@ -479,7 +479,7 @@ export default function UserDashboard() {
 // Helper Components
 // ==========================================
 
-// 🚨 New Sidebar Tab Helper
+// New Sidebar Tab Helper
 function NavItem({ icon, label, isActive, onClick }) {
   return (
     <button

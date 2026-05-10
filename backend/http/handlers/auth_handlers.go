@@ -118,8 +118,7 @@ func LoginHandlers(store storage.Storage, jwtSecret string) http.HandlerFunc {
 	}
 }
 
-//Logout Handler
-
+// Logout Handler
 func LogoutHandlers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie := &http.Cookie{
@@ -135,5 +134,45 @@ func LogoutHandlers() http.HandlerFunc {
 		http.SetCookie(w, cookie)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"Message":"Successfully Logged out}`))
+	}
+}
+
+// Delete Recipient
+func DeleteRecipient(store storage.Storage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		//  Approve the browser preflight test
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		if r.Method != http.MethodDelete {
+			http.Error(w, "Method not Allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		// Extracting userID
+		userID, ok := r.Context().Value(UserIDKey).(int)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		var payload struct {
+			ID int `json:"id"`
+		}
+		// Decoding payload
+		err := json.NewDecoder(r.Body).Decode(&payload)
+		if err != nil {
+			http.Error(w, "Invalid JSON Payload", http.StatusBadRequest)
+			return
+		}
+		// Delete Recipients
+		err = store.DeleteRecipient(userID, payload.ID)
+		if err != nil {
+			http.Error(w, "Failed to Delete DB from database", http.StatusInternalServerError)
+			return
+		}
+		// Send Success Receipt
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"message":"Contact deleted successfully!"}`))
 	}
 }
