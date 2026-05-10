@@ -50,8 +50,8 @@ func InitDB(connSTr string) (*sql.DB, error) {
 	}
 
 	// email, and foreign key should be unique even name or remaining fields remains same
-	// for Recipients Schema
 
+	// for Recipients Schema
 	query := `
 	CREATE TABLE IF NOT EXISTS recipients(
 		id SERIAL PRIMARY KEY,
@@ -85,6 +85,20 @@ func InitDB(connSTr string) (*sql.DB, error) {
 	_, err = db.Exec(campaignQuery)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create campaigns data table: %v", err)
+	}
+
+	// For storing logs data
+	logsEmail := ` CREATE TABLE IF NOT EXISTS email_logs(
+		id SERIAL PRIMARY KEY,
+    	user_id INT NOT NULL,              
+    	campaign_name VARCHAR(255),        
+    	recipient_email VARCHAR(255),     
+    	status VARCHAR(50),                
+    	sent_at TIMESTAMP DEFAULT NOW()    
+	)`
+	_, err = db.Exec(logsEmail)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create Email logs data table: %v", err)
 	}
 
 	log.Println("Schema initialized.")

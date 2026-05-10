@@ -187,11 +187,17 @@ func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer) http.Handle
 				if err != nil {
 					fmt.Printf("Error while sending mail to %s\r\n%v\n", user.Email, err)
 					_ = store.UpdateEmailStatus(userID, user.Email, "failed")
+					_ = store.LogEmailEvent(userID, payload.Subject, user.Email, "failed")
 					continue
 				}
 				updateErr := store.UpdateEmailStatus(userID, user.Email, "sent")
 				if updateErr != nil {
 					fmt.Printf("Email sent to %s, but DB update failed: %v\n", user.Email, updateErr)
+				}
+				//Logging email events
+				logErr := store.LogEmailEvent(userID, payload.Subject, user.Email, "sent")
+				if logErr != nil {
+					fmt.Printf("Email sent to %s, but Logging event failed: %v\n", user.Email, logErr)
 				}
 			}
 		}()
@@ -232,6 +238,7 @@ func ResendEmailHandler(store storage.Storage, mail *mailer.Mailer) http.Handler
 		err = mail.SendEmail(payload.Email, "Tech Bird: Delivery Retry",
 			"<h1>We are retrying your email!</h1><p>Our engine successfully re-fired this message.</p>")
 		if err != nil {
+			_ = store.LogEmailEvent(userID, "Tech Bird: Delivery Retry", payload.Email, "failed")
 			http.Error(w, "Error while resending email", http.StatusBadRequest)
 			return
 		}
@@ -240,6 +247,11 @@ func ResendEmailHandler(store storage.Storage, mail *mailer.Mailer) http.Handler
 		if err != nil {
 			http.Error(w, "Email sent, but DB update failed", http.StatusInternalServerError)
 			return
+		}
+		// Logging emailEvent
+		err = store.LogEmailEvent(userID, "Tech Bird: Delivery Retry", payload.Email, "sent")
+		if err != nil {
+			fmt.Println("Failed to log the resend event:", err)
 		}
 		// Return success to React
 		w.Header().Set("Content-Type", "application/json")

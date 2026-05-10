@@ -128,3 +128,14 @@ func (p *PostgresStore) DeleteRecipient(userID int, recipientID int) error {
 	return nil
 
 }
+
+// Log an email event to the permanent ledger
+
+func (p *PostgresStore) LogEmailEvent(userID int, campaignName string, recipientEmail string, status string) error {
+	query := `INSERT INTO email_logs (user_id, campaign_name, recipient_email, status) VALUES ($1, $2, $3, $4)`
+	_, err := p.db.Exec(query, userID, campaignName, recipientEmail, status)
+	if err != nil {
+		return err
+	}
+	return nil
+}

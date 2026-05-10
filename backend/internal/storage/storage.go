@@ -7,6 +7,8 @@ type Storage interface {
 	UpdateEmailStatus(userID int, email string, status string) error
 	AddRecipients(userID int, name string, email string, segment string) error
 	DeleteRecipient(userID int, recipientID int) error
+	LogEmailEvent(userID int, campaignName string, recipientEmail string, status string) error
+
 	CreateUser(email string, passwordHash string, userRole string) error
 	GetUser(email string) (*types.User, error)
 }
