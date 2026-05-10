@@ -201,14 +201,19 @@ func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer) http.Handle
 	}
 }
 
+// For resending email
 func ResendEmailHandler(store storage.Storage, mail *mailer.Mailer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method not Allowed", http.StatusMethodNotAllowed)
 			return
 		}
 		// Extract userID for authentication and authorization
-		userID, ok := r.Context().Value("userIDKey").(int)
+		userID, ok := r.Context().Value(UserIDKey).(int)
 		if !ok {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
