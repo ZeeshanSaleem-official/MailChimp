@@ -84,7 +84,7 @@ func RunCampaignHandler(triggerWorker func(userID int, camp types.Campaign)) htt
 	}
 }
 
-// For fetching the data from the CSV upload file
+// For fetching the data from the CSV upload file for uploading contacts
 func UploadCSVHandler(store storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
