@@ -51,6 +51,9 @@ export default function UserDashboard() {
   const [resendingId, setResendingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
 
+  // Logs State
+  const [logs, setLogs] = useState([]);
+
   const fetchRecipients = async () => {
     let url = "/api/recipients";
     try {
@@ -74,8 +77,21 @@ export default function UserDashboard() {
     }
   };
 
+  // For fetching logs
+  const fetchLogs = async () => {
+    try {
+      const response = await apiClient.get("/api/logs");
+      setLogs(response.data || []);
+    } catch (err) {
+      console.error("Failed to fetch delivery logs:", err);
+    }
+  };
+
   useEffect(() => {
+    //fetch recipients
     fetchRecipients();
+    //fetch Logs
+    fetchLogs();
     const interval = setInterval(fetchRecipients, 3000);
     return () => clearInterval(interval);
   }, [filter]);
@@ -389,47 +405,44 @@ export default function UserDashboard() {
                   <table className="w-full text-left border-collapse min-w-[500px]">
                     <thead>
                       <tr className="bg-slate-50/50 text-slate-400 text-[10px] md:text-[11px] font-black uppercase tracking-widest border-b border-slate-100">
+                        <th className="p-4">Date & Campaign</th>
                         <th className="p-4">Recipient</th>
                         <th className="p-4">Status</th>
-                        <th className="p-4 text-center">Manual Retry</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {recipients.map((user) => (
+                      {logs.length === 0 && (
+                        <tr>
+                          <td
+                            colSpan="3"
+                            className="p-8 text-center text-slate-500 text-sm"
+                          >
+                            No campaigns have been logged yet. Send one to get
+                            started!
+                          </td>
+                        </tr>
+                      )}
+
+                      {logs.map((log) => (
                         <tr
-                          key={user.id}
-                          className="border-b border-slate-50 transition-colors"
+                          key={log.id}
+                          className="border-b border-slate-50 transition-colors hover:bg-slate-50/50"
                         >
                           <td className="p-4">
-                            <p className="font-bold text-slate-700 text-sm">
-                              {user.name}
+                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                              {new Date(log.sent_at).toLocaleString()}
                             </p>
-                            <p className="text-slate-400 text-xs">
-                              {user.email}
+                            <p className="font-bold text-slate-700 text-sm mt-0.5">
+                              {log.campaign_name}
                             </p>
                           </td>
                           <td className="p-4">
-                            <StatusBadge status={user.status} />
+                            <p className="text-slate-600 text-sm">
+                              {log.recipient_email}
+                            </p>
                           </td>
-                          <td className="p-4 text-center">
-                            {user.status === "failed" && (
-                              <button
-                                onClick={() =>
-                                  handleResend(user.email, user.id)
-                                }
-                                disabled={resendingId === user.id}
-                                className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors"
-                              >
-                                {resendingId === user.id ? (
-                                  <RefreshCw
-                                    size={14}
-                                    className="animate-spin"
-                                  />
-                                ) : (
-                                  <RefreshCcw size={14} />
-                                )}
-                              </button>
-                            )}
+                          <td className="p-4">
+                            <StatusBadge status={log.status} />
                           </td>
                         </tr>
                       ))}
