@@ -139,3 +139,26 @@ func (p *PostgresStore) LogEmailEvent(userID int, campaignName string, recipient
 	}
 	return nil
 }
+
+// Fetch all email logs for the Analytics tab
+
+func (p *PostgresStore) GetEmailLogs(userID int) ([]types.EmailLog, error) {
+	query := `SELECT id, campaign_name, recipient_email, status, sent_at FROM email_logs WHERE user_id = $1 ORDER BY sent_at DESC`
+	rows, err := p.db.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var logs []types.EmailLog
+
+	for rows.Next() {
+		var l types.EmailLog
+		err := rows.Scan(&l.ID, &l.CampaignName, &l.RecipientEmail, &l.Status, &l.SentAt)
+		if err == nil {
+			logs = append(logs, l)
+		}
+	}
+	return logs, nil
+
+}

@@ -106,6 +106,7 @@ func main() {
 	mux.HandleFunc("/api/signup", handlers.SignUpHandlers(store))
 	mux.HandleFunc("/api/login", handlers.LoginHandlers(store, cfg.JWTSecret))
 	mux.HandleFunc("/api/logout", handlers.LogoutHandlers())
+	// logs handlers
 
 	fmt.Println(" Web Server is running on http://localhost:8080")
 	fmt.Println(" Scheduler is running in the background...")
