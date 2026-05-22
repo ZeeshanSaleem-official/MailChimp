@@ -259,3 +259,34 @@ func ResendEmailHandler(store storage.Storage, mail *mailer.Mailer) http.Handler
 
 	}
 }
+
+// For fetching logs for analytics
+func GetLogsHandler(store storage.Storage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not Allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		userID, ok := r.Context().Value(UserIDKey).(int)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		emaillogs, err := store.GetEmailLogs(userID)
+		if err != nil {
+			http.Error(w, "Failed to fetch logs from database", http.StatusInternalServerError)
+			return
+		}
+		// return empty table instead of null
+		if emaillogs == nil {
+			emaillogs = []types.EmailLog{}
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(emaillogs)
+	}
+}
