@@ -107,7 +107,7 @@ func main() {
 	mux.HandleFunc("/api/login", handlers.LoginHandlers(store, cfg.JWTSecret))
 	mux.HandleFunc("/api/logout", handlers.LogoutHandlers())
 	// logs handlers
-
+	mux.HandleFunc("/api/logs", handlers.AuthMiddleware(cfg.JWTSecret, handlers.GetLogsHandler(store)))
 	fmt.Println(" Web Server is running on http://localhost:8080")
 	fmt.Println(" Scheduler is running in the background...")
 	// Configure CORS to allow  React frontend (Fort Knox settings)
