@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   LogOut,
@@ -11,7 +11,9 @@ import {
   X,
   LayoutDashboard,
   Activity,
-  Server
+  Server,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import apiClient from "../api/axios";
 
@@ -127,6 +129,26 @@ export default function AdminDashboard() {
     suspended: users.filter((u) => u.status === "suspended").length,
   };
 
+  // Group globalLogs by sender
+  const [expandedSenders, setExpandedSenders] = useState({});
+
+  const toggleSender = (senderEmail) => {
+    setExpandedSenders((prev) => ({
+      ...prev,
+      [senderEmail]: !prev[senderEmail]
+    }));
+  };
+
+  const groupedLogs = globalLogs.reduce((acc, log) => {
+    if (!acc[log.sender_email]) {
+      acc[log.sender_email] = [];
+    }
+    acc[log.sender_email].push(log);
+    return acc;
+  }, {});
+
+  const senders = Object.keys(groupedLogs);
+
   return (
     <div className="flex h-screen bg-gray-50 font-sans text-gray-900 overflow-hidden">
       {/* MOBILE OVERLAY */}
@@ -139,9 +161,8 @@ export default function AdminDashboard() {
 
       {/* SIDEBAR */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-200 ease-in-out md:relative md:translate-x-0 ${
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-200 ease-in-out md:relative md:translate-x-0 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
           <div className="flex items-center gap-2">
@@ -159,13 +180,13 @@ export default function AdminDashboard() {
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          <button 
+          <button
             onClick={() => { setActiveTab("users"); setIsMobileMenuOpen(false); }}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${activeTab === "users" ? "bg-gray-100 text-gray-900" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"}`}
           >
             <Users size={18} className={activeTab === "users" ? "text-gray-500" : "text-gray-400"} /> Users
           </button>
-          <button 
+          <button
             onClick={() => { setActiveTab("health"); setIsMobileMenuOpen(false); }}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${activeTab === "health" ? "bg-gray-100 text-gray-900" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"}`}
           >
@@ -300,7 +321,7 @@ export default function AdminDashboard() {
                   <StatCard title="Global Queue Size" value={globalStats.global_queue} icon={<Server size={20} className="text-purple-500" />} />
                   <StatCard title="System Failures" value={globalStats.total_failures} icon={<AlertCircle size={20} className="text-red-500" />} />
                 </div>
-                
+
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                   <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
                     <div>
@@ -311,51 +332,95 @@ export default function AdminDashboard() {
                       <p className="text-xs text-gray-500 mt-1">Showing the last 100 platform dispatches in real-time.</p>
                     </div>
                   </div>
-                  
+
                   <div className="overflow-x-auto max-h-[500px]">
                     <table className="w-full text-left border-collapse">
                       <thead className="sticky top-0 z-10 bg-gray-50 border-b border-gray-200">
                         <tr className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                          <th className="px-6 py-3">Time</th>
+                          <th className="px-6 py-3 w-8"></th>
                           <th className="px-6 py-3">Sender (Tenant)</th>
-                          <th className="px-6 py-3">Campaign</th>
-                          <th className="px-6 py-3">Recipient</th>
-                          <th className="px-6 py-3 text-right">Status</th>
+                          <th className="px-6 py-3">Recent Activity</th>
+                          <th className="px-6 py-3 text-right">Last Active</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 bg-white">
-                        {globalLogs.length === 0 && !loading && !error && (
+                        {senders.length === 0 && !loading && !error && (
                           <tr>
-                            <td colSpan="5" className="px-6 py-8 text-center text-gray-500 text-sm">
+                            <td colSpan="4" className="px-6 py-8 text-center text-gray-500 text-sm">
                               No recent activity found.
                             </td>
                           </tr>
                         )}
-                        {globalLogs.map((log) => (
-                          <tr key={log.id} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-6 py-3 text-xs text-gray-500 whitespace-nowrap">
-                              {new Date(log.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                            </td>
-                            <td className="px-6 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">
-                              {log.sender_email}
-                            </td>
-                            <td className="px-6 py-3 text-sm text-gray-500 whitespace-nowrap">
-                              {log.campaign_name}
-                            </td>
-                            <td className="px-6 py-3 text-sm text-gray-500 whitespace-nowrap">
-                              {log.recipient_email}
-                            </td>
-                            <td className="px-6 py-3 whitespace-nowrap text-right">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                                log.status === "sent" ? "bg-green-100 text-green-700" :
-                                log.status === "failed" || log.status === "bounced" ? "bg-red-100 text-red-700" :
-                                "bg-gray-100 text-gray-700"
-                              }`}>
-                                {log.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
+                        {senders.map((sender) => {
+                          const isExpanded = expandedSenders[sender];
+                          const logs = groupedLogs[sender];
+                          const lastActive = new Date(Math.max(...logs.map(l => new Date(l.sent_at).getTime())));
+
+                          return (
+                            <React.Fragment key={sender}>
+                              <tr
+                                onClick={() => toggleSender(sender)}
+                                className="hover:bg-gray-50 transition-colors cursor-pointer"
+                              >
+                                <td className="px-6 py-4 text-gray-400">
+                                  {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                                </td>
+                                <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">
+                                  {sender}
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                                  {logs.length} emails logged
+                                </td>
+                                <td className="px-6 py-4 text-xs text-gray-500 whitespace-nowrap text-right">
+                                  {lastActive.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                </td>
+                              </tr>
+
+                              {/* EXPANDED DETAILS */}
+                              {isExpanded && (
+                                <tr className="bg-gray-50/50">
+                                  <td colSpan="4" className="px-6 py-4 border-b border-gray-100">
+                                    <div className="rounded-md border border-gray-200 overflow-hidden bg-white">
+                                      <table className="w-full text-left border-collapse text-xs">
+                                        <thead className="bg-gray-100 border-b border-gray-200 text-gray-500 uppercase tracking-wider">
+                                          <tr>
+                                            <th className="px-4 py-2">Time</th>
+                                            <th className="px-4 py-2">Campaign</th>
+                                            <th className="px-4 py-2">Recipient</th>
+                                            <th className="px-4 py-2 text-right">Status</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100">
+                                          {logs.map((log) => (
+                                            <tr key={log.id} className="hover:bg-gray-50">
+                                              <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
+                                                {new Date(log.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                              </td>
+                                              <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
+                                                {log.campaign_name}
+                                              </td>
+                                              <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
+                                                {log.recipient_email}
+                                              </td>
+                                              <td className="px-4 py-2 whitespace-nowrap text-right">
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${log.status === "sent" ? "bg-green-100 text-green-700" :
+                                                    log.status === "failed" || log.status === "bounced" ? "bg-red-100 text-red-700" :
+                                                      "bg-gray-100 text-gray-700"
+                                                  }`}>
+                                                  {log.status}
+                                                </span>
+                                              </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
