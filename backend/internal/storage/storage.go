@@ -17,4 +17,5 @@ type Storage interface {
 	// admin
 	GetAllUsers() ([]types.User, error)
 	UpdateUserStatus(userID int, status string) error
+	GetGlobalStats() (types.GlobalStats, error)
 }

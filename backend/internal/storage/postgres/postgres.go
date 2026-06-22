@@ -202,3 +202,36 @@ func (p *PostgresStore) UpdateUserStatus(userID int, status string) error {
 	_, err := p.db.Exec(query, status, userID)
 	return err
 }
+
+// GetGlobalStats fetches platform-wide statistics for the Super Admin
+func (p *PostgresStore) GetGlobalStats() (types.GlobalStats, error) {
+	var stats types.GlobalStats
+
+	// Count total users
+	err := p.db.QueryRow(`SELECT COUNT(*) FROM users`).Scan(&stats.TotalUsers)
+	if err != nil {
+		return stats, err
+	}
+
+	// Count global queue (pending or processing campaigns)
+	// We count total pending campaigns, or we can count total pending recipients.
+	// Since campaigns hold the queue state:
+	err = p.db.QueryRow(`SELECT COUNT(*) FROM campaigns WHERE status = 'pending' OR status = 'processing'`).Scan(&stats.GlobalQueue)
+	if err != nil {
+		return stats, err
+	}
+
+	// Count total sent emails globally
+	err = p.db.QueryRow(`SELECT COUNT(*) FROM email_logs WHERE status = 'sent'`).Scan(&stats.TotalSent)
+	if err != nil {
+		return stats, err
+	}
+
+	// Count total failed emails globally
+	err = p.db.QueryRow(`SELECT COUNT(*) FROM email_logs WHERE status = 'failed'`).Scan(&stats.TotalFailures)
+	if err != nil {
+		return stats, err
+	}
+
+	return stats, nil
+}

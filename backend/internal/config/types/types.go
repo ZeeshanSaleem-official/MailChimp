@@ -45,3 +45,10 @@ type EmailLog struct {
 	Status         string    `json:"status"`
 	SentAt         time.Time `json:"sent_at"`
 }
+
+type GlobalStats struct {
+	TotalUsers    int `json:"total_users"`
+	GlobalQueue   int `json:"global_queue"`
+	TotalSent     int `json:"total_sent"`
+	TotalFailures int `json:"total_failures"`
+}

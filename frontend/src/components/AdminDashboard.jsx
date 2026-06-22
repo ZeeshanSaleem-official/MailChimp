@@ -4,20 +4,30 @@ import {
   LogOut,
   Users,
   CheckCircle,
-  XCircle,
   RefreshCw,
   AlertCircle,
   Power,
   Menu,
   X,
-  LayoutDashboard
+  LayoutDashboard,
+  Activity,
+  Server
 } from "lucide-react";
 import apiClient from "../api/axios";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
 
+  const [activeTab, setActiveTab] = useState("users"); // "users" or "health"
+
   const [users, setUsers] = useState([]);
+  const [globalStats, setGlobalStats] = useState({
+    total_users: 0,
+    global_queue: 0,
+    total_sent: 0,
+    total_failures: 0
+  });
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -33,21 +43,50 @@ export default function AdminDashboard() {
       setError(null);
     } catch (err) {
       console.error("Fetch error:", err);
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        setError("Admin session expired or unauthorized. Please log in again.");
-      } else {
-        setError("Cannot connect to server. Please check your connection.");
-      }
+      handleError(err);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchGlobalStats = async () => {
+    try {
+      const response = await apiClient.get("/api/admin/stats");
+      setGlobalStats(response.data || { total_users: 0, global_queue: 0, total_sent: 0, total_failures: 0 });
+      setError(null);
+    } catch (err) {
+      console.error("Fetch stats error:", err);
+      handleError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleError = (err) => {
+    if (err.response?.status === 401 || err.response?.status === 403) {
+      setError("Admin session expired or unauthorized. Please log in again.");
+    } else {
+      setError("Cannot connect to server. Please check your connection.");
+    }
+  };
+
+  const fetchData = () => {
+    setLoading(true);
+    if (activeTab === "users") {
+      fetchUsers();
+    } else {
+      fetchGlobalStats();
+    }
+  };
+
   useEffect(() => {
-    fetchUsers();
-    const interval = setInterval(fetchUsers, 5000);
+    fetchData();
+    const interval = setInterval(() => {
+      if (activeTab === "users") fetchUsers();
+      else fetchGlobalStats();
+    }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [activeTab]);
 
   const toggleUserStatus = async (userId, currentStatus) => {
     const newStatus = currentStatus === "active" ? "suspended" : "active";
@@ -77,7 +116,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const stats = {
+  const localStats = {
     total: users.length,
     active: users.filter((u) => u.status === "active" || !u.status).length,
     suspended: users.filter((u) => u.status === "suspended").length,
@@ -114,9 +153,18 @@ export default function AdminDashboard() {
           </button>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-          <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium bg-gray-100 text-gray-900">
-            <Users size={18} className="text-gray-500" /> Users
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          <button 
+            onClick={() => { setActiveTab("users"); setIsMobileMenuOpen(false); }}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${activeTab === "users" ? "bg-gray-100 text-gray-900" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"}`}
+          >
+            <Users size={18} className={activeTab === "users" ? "text-gray-500" : "text-gray-400"} /> Users
+          </button>
+          <button 
+            onClick={() => { setActiveTab("health"); setIsMobileMenuOpen(false); }}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${activeTab === "health" ? "bg-gray-100 text-gray-900" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"}`}
+          >
+            <Activity size={18} className={activeTab === "health" ? "text-blue-500" : "text-gray-400"} /> System Health
           </button>
         </nav>
 
@@ -141,7 +189,7 @@ export default function AdminDashboard() {
               <Menu size={20} />
             </button>
             <h2 className="text-lg font-medium text-gray-800 hidden sm:block">
-              Users Management
+              {activeTab === "users" ? "Users Management" : "Global Platform Health"}
             </h2>
             {loading && (
               <RefreshCw size={16} className="animate-spin text-gray-400" />
@@ -170,98 +218,95 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* STATS */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <StatCard title="Total Users" value={stats.total} />
-              <StatCard title="Active Accounts" value={stats.active} />
-              <StatCard title="Suspended" value={stats.suspended} />
-            </div>
+            {/* USERS TAB CONTENT */}
+            {activeTab === "users" && (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <StatCard title="Total Users" value={localStats.total} />
+                  <StatCard title="Active Accounts" value={localStats.active} />
+                  <StatCard title="Suspended" value={localStats.suspended} />
+                </div>
 
-            {/* USERS TABLE */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-base font-medium text-gray-900">
-                  Users
-                </h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      <th className="px-6 py-3">ID</th>
-                      <th className="px-6 py-3">Email</th>
-                      <th className="px-6 py-3">Role</th>
-                      <th className="px-6 py-3">Status</th>
-                      <th className="px-6 py-3 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
-                    {users.length === 0 && !loading && !error && (
-                      <tr>
-                        <td
-                          colSpan="5"
-                          className="px-6 py-8 text-center text-gray-500 text-sm"
-                        >
-                          No users found in database.
-                        </td>
-                      </tr>
-                    )}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-base font-medium text-gray-900">
+                      Users
+                    </h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3">ID</th>
+                          <th className="px-6 py-3">Email</th>
+                          <th className="px-6 py-3">Role</th>
+                          <th className="px-6 py-3">Status</th>
+                          <th className="px-6 py-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 bg-white">
+                        {users.length === 0 && !loading && !error && (
+                          <tr>
+                            <td colSpan="5" className="px-6 py-8 text-center text-gray-500 text-sm">
+                              No users found in database.
+                            </td>
+                          </tr>
+                        )}
+                        {users.map((user) => (
+                          <tr key={user.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{user.id}</td>
+                            <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">{user.email}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.user === "admin" ? "bg-purple-100 text-purple-800" : "bg-gray-100 text-gray-800"}`}>
+                                {user.user || "user"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.status === "active" || !user.status ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                                {user.status || "active"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              {user.user !== "admin" && (
+                                <button
+                                  onClick={() => toggleUserStatus(user.id, user.status || "active")}
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border transition-colors ${user.status === "active" || !user.status ? "border-gray-300 text-red-600 hover:bg-red-50" : "border-gray-300 text-green-600 hover:bg-green-50"}`}
+                                >
+                                  <Power size={14} />
+                                  {user.status === "active" || !user.status ? "Suspend" : "Activate"}
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
 
-                    {users.map((user) => (
-                      <tr key={user.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                          {user.id}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">
-                          {user.email}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              user.user === "admin"
-                                ? "bg-purple-100 text-purple-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {user.user || "user"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              user.status === "active" || !user.status
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {user.status || "active"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          {user.user !== "admin" && (
-                            <button
-                              onClick={() =>
-                                toggleUserStatus(user.id, user.status || "active")
-                              }
-                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border transition-colors ${
-                                user.status === "active" || !user.status
-                                  ? "border-gray-300 text-red-600 hover:bg-red-50"
-                                  : "border-gray-300 text-green-600 hover:bg-green-50"
-                              }`}
-                            >
-                              <Power size={14} />
-                              {user.status === "active" || !user.status
-                                ? "Suspend"
-                                : "Activate"}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {/* SYSTEM HEALTH TAB CONTENT */}
+            {activeTab === "health" && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <StatCard title="Total Platform Users" value={globalStats.total_users} icon={<Users size={20} className="text-blue-500" />} />
+                  <StatCard title="Emails Globally Sent" value={globalStats.total_sent} icon={<CheckCircle size={20} className="text-green-500" />} />
+                  <StatCard title="Global Queue Size" value={globalStats.global_queue} icon={<Server size={20} className="text-purple-500" />} />
+                  <StatCard title="System Failures" value={globalStats.total_failures} icon={<AlertCircle size={20} className="text-red-500" />} />
+                </div>
+                
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 md:p-8 flex flex-col items-center justify-center text-center">
+                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 border border-blue-100">
+                    <Activity className="text-blue-600" size={32} />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Platform is Online</h3>
+                  <p className="text-gray-500 max-w-md">
+                    The dispatch engine is running and actively processing the global queue. SMTP workers are automatically polling the database every minute.
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </main>
       </div>
@@ -271,25 +316,12 @@ export default function AdminDashboard() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden">
             <div className="px-6 py-5">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Sign Out
-              </h3>
-              <p className="text-sm text-gray-500">
-                Are you sure you want to sign out of the admin panel?
-              </p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Sign Out</h3>
+              <p className="text-sm text-gray-500">Are you sure you want to sign out of the admin panel?</p>
             </div>
             <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3">
-              <button
-                onClick={() => setShowLogoutModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmLogout}
-                disabled={isLoggingOut}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              >
+              <button onClick={() => setShowLogoutModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
+              <button onClick={confirmLogout} disabled={isLoggingOut} className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700">
                 {isLoggingOut ? "Signing out..." : "Sign Out"}
               </button>
             </div>
@@ -300,11 +332,20 @@ export default function AdminDashboard() {
   );
 }
 
-function StatCard({ title, value }) {
+function StatCard({ title, value, icon }) {
   return (
-    <div className="bg-white px-6 py-5 rounded-lg border border-gray-200 shadow-sm">
-      <p className="text-sm font-medium text-gray-500 truncate">{title}</p>
-      <p className="mt-2 text-3xl font-semibold text-gray-900">{value}</p>
+    <div className="bg-white px-6 py-5 rounded-lg border border-gray-200 shadow-sm relative overflow-hidden">
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="text-sm font-medium text-gray-500 truncate">{title}</p>
+          <p className="mt-2 text-3xl font-semibold text-gray-900">{value}</p>
+        </div>
+        {icon && (
+          <div className="p-2 bg-gray-50 rounded-md border border-gray-100">
+            {icon}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
