@@ -73,12 +73,18 @@ func (p *PostgresStore) CreateUser(email string, hashPassword string, userRole s
 
 // Getting a user for validation
 func (p *PostgresStore) GetUser(email string) (*types.User, error) {
-	query := `SELECT id, email, password_hash, userRole FROM users WHERE email = $1`
+	query := `SELECT id, email, password_hash, userRole, status FROM users WHERE email = $1`
 	rows := p.db.QueryRow(query, email)
 	var u types.User
-	err := rows.Scan(&u.ID, &u.Email, &u.HashPassword, &u.Role)
+	var status sql.NullString
+	err := rows.Scan(&u.ID, &u.Email, &u.HashPassword, &u.Role, &status)
 	if err != nil {
 		return nil, err
+	}
+	if status.Valid {
+		u.Status = status.String
+	} else {
+		u.Status = "active"
 	}
 	return &u, nil
 }
@@ -161,4 +167,38 @@ func (p *PostgresStore) GetEmailLogs(userID int) ([]types.EmailLog, error) {
 	}
 	return logs, nil
 
+}
+
+// GetAllUsers fetches all users for the Admin Dashboard
+func (p *PostgresStore) GetAllUsers() ([]types.User, error) {
+	query := `SELECT id, email, userRole, status, created_at FROM users ORDER BY id ASC`
+	rows, err := p.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []types.User
+	for rows.Next() {
+		var u types.User
+		var status sql.NullString
+		err := rows.Scan(&u.ID, &u.Email, &u.Role, &status, &u.CreatedAt)
+		if err != nil {
+			continue
+		}
+		if status.Valid {
+			u.Status = status.String
+		} else {
+			u.Status = "active"
+		}
+		users = append(users, u)
+	}
+	return users, nil
+}
+
+// UpdateUserStatus changes a user's status (e.g., active, suspended, banned)
+func (p *PostgresStore) UpdateUserStatus(userID int, status string) error {
+	query := `UPDATE users SET status = $1 WHERE id = $2`
+	_, err := p.db.Exec(query, status, userID)
+	return err
 }

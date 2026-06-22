@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { Route, BrowserRouter, Routes, Navigate } from "react-router-dom";
 import "./index.css";
 import App from "./App.jsx";
+import AdminDashboard from "./components/AdminDashboard.jsx";
 import Login from "./components/Login.jsx";
 import SignUp from "./components/SignUp.jsx";
 import Protectedroute from "./components/ProtectedRoute.jsx";
@@ -24,7 +25,7 @@ createRoot(document.getElementById("root")).render(
           path="/admin"
           element={
             <Protectedroute requiredRole="admin">
-              <App />
+              <AdminDashboard />
             </Protectedroute>
           }
         />

@@ -32,6 +32,7 @@ type User struct {
 	Email        string    `json:"email"`
 	HashPassword string    `json:"-"` // for security password written as -
 	Role         string    `json:"user"`
+	Status       string    `json:"status"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 

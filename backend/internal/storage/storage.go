@@ -14,4 +14,7 @@ type Storage interface {
 	// users
 	CreateUser(email string, passwordHash string, userRole string) error
 	GetUser(email string) (*types.User, error)
+	// admin
+	GetAllUsers() ([]types.User, error)
+	UpdateUserStatus(userID int, status string) error
 }

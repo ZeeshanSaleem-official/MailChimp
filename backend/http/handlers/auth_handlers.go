@@ -60,6 +60,7 @@ func GenerateToken(user types.User, secret string) (string, error) {
 	claims := jwt.MapClaims{
 		"userID": user.ID,
 		"email":  user.Email,
+		"role":   user.Role,
 		"exp":    time.Now().Add(time.Hour * 24).Unix(),
 	}
 	// Create the token blueprint

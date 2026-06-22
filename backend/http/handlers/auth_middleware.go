@@ -54,3 +54,52 @@ func AuthMiddleware(jwtSecret string, next http.HandlerFunc) http.HandlerFunc {
 		next(w, r.WithContext(ctx))
 	}
 }
+
+func AdminMiddleware(jwtSecret string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Grab the Authorization token from cookie
+		cookie, err := r.Cookie("jwt")
+		if err != nil {
+			http.Error(w, "Missing authentication cookie", http.StatusUnauthorized)
+			return
+		}
+		tokenString := cookie.Value
+		parsedToken, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+			_, ok := t.Method.(*jwt.SigningMethodHMAC)
+			if !ok {
+				return nil, fmt.Errorf("Unexpected SigningMethod")
+			}
+			return []byte(jwtSecret), nil
+		})
+		if err != nil || !parsedToken.Valid {
+			http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
+			return
+		}
+
+		// Extract the claims
+		claims, ok := parsedToken.Claims.(jwt.MapClaims)
+		if !ok {
+			http.Error(w, "Invalid Token Payload", http.StatusUnauthorized)
+			return
+		}
+
+		// Check the role
+		role, ok := claims["role"].(string)
+		if !ok || role != "admin" {
+			http.Error(w, "Forbidden: Admin access required", http.StatusForbidden)
+			return
+		}
+
+		// extracting user ID
+		userIDFloat, ok := claims["userID"].(float64)
+		if !ok {
+			http.Error(w, "User ID is missing in token", http.StatusUnauthorized)
+			return
+		}
+		userID := int(userIDFloat)
+		
+		// Inject the userID into the request Context
+		ctx := context.WithValue(r.Context(), UserIDKey, userID)
+		next(w, r.WithContext(ctx))
+	}
+}

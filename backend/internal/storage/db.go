@@ -49,6 +49,13 @@ func InitDB(connSTr string) (*sql.DB, error) {
 		return nil, fmt.Errorf("Failed to create users table: %v", err)
 	}
 
+	// Ensure status column exists (for backward compatibility)
+	alterUserQuery := `ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'active';`
+	_, err = db.Exec(alterUserQuery)
+	if err != nil {
+		fmt.Printf("Warning: failed to add status column to users: %v\n", err)
+	}
+
 	// email, and foreign key should be unique even name or remaining fields remains same
 
 	// for Recipients Schema
