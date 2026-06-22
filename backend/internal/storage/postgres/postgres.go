@@ -235,3 +235,29 @@ func (p *PostgresStore) GetGlobalStats() (types.GlobalStats, error) {
 
 	return stats, nil
 }
+
+// GetGlobalEmailLogs fetches the recent activity feed across the entire platform
+func (p *PostgresStore) GetGlobalEmailLogs(limit int) ([]types.GlobalEmailLog, error) {
+	query := `
+		SELECT e.id, u.email as sender_email, e.campaign_name, e.recipient_email, e.status, e.sent_at 
+		FROM email_logs e 
+		JOIN users u ON e.user_id = u.id 
+		ORDER BY e.sent_at DESC 
+		LIMIT $1
+	`
+	rows, err := p.db.Query(query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var logs []types.GlobalEmailLog
+	for rows.Next() {
+		var l types.GlobalEmailLog
+		err := rows.Scan(&l.ID, &l.SenderEmail, &l.CampaignName, &l.RecipientEmail, &l.Status, &l.SentAt)
+		if err == nil {
+			logs = append(logs, l)
+		}
+	}
+	return logs, nil
+}

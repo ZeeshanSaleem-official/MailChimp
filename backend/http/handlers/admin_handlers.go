@@ -78,3 +78,22 @@ func GetGlobalStatsHandler(store storage.Storage) http.HandlerFunc {
 		json.NewEncoder(w).Encode(stats)
 	}
 }
+
+// GetGlobalLogsHandler fetches the recent activity firehose
+func GetGlobalLogsHandler(store storage.Storage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		logs, err := store.GetGlobalEmailLogs(100) // limit to 100
+		if err != nil {
+			http.Error(w, "Failed to fetch global logs", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(logs)
+	}
+}

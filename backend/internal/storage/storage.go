@@ -18,4 +18,5 @@ type Storage interface {
 	GetAllUsers() ([]types.User, error)
 	UpdateUserStatus(userID int, status string) error
 	GetGlobalStats() (types.GlobalStats, error)
+	GetGlobalEmailLogs(limit int) ([]types.GlobalEmailLog, error)
 }

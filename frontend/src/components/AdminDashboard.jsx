@@ -27,6 +27,7 @@ export default function AdminDashboard() {
     total_sent: 0,
     total_failures: 0
   });
+  const [globalLogs, setGlobalLogs] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -51,8 +52,12 @@ export default function AdminDashboard() {
 
   const fetchGlobalStats = async () => {
     try {
-      const response = await apiClient.get("/api/admin/stats");
-      setGlobalStats(response.data || { total_users: 0, global_queue: 0, total_sent: 0, total_failures: 0 });
+      const [statsRes, logsRes] = await Promise.all([
+        apiClient.get("/api/admin/stats"),
+        apiClient.get("/api/admin/logs")
+      ]);
+      setGlobalStats(statsRes.data || { total_users: 0, global_queue: 0, total_sent: 0, total_failures: 0 });
+      setGlobalLogs(logsRes.data || []);
       setError(null);
     } catch (err) {
       console.error("Fetch stats error:", err);
@@ -296,14 +301,64 @@ export default function AdminDashboard() {
                   <StatCard title="System Failures" value={globalStats.total_failures} icon={<AlertCircle size={20} className="text-red-500" />} />
                 </div>
                 
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 md:p-8 flex flex-col items-center justify-center text-center">
-                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 border border-blue-100">
-                    <Activity className="text-blue-600" size={32} />
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
+                    <div>
+                      <h3 className="text-base font-medium text-gray-900 flex items-center gap-2">
+                        <Activity className="text-blue-600" size={18} />
+                        Live Global Activity Stream
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-1">Showing the last 100 platform dispatches in real-time.</p>
+                    </div>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Platform is Online</h3>
-                  <p className="text-gray-500 max-w-md">
-                    The dispatch engine is running and actively processing the global queue. SMTP workers are automatically polling the database every minute.
-                  </p>
+                  
+                  <div className="overflow-x-auto max-h-[500px]">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="sticky top-0 z-10 bg-gray-50 border-b border-gray-200">
+                        <tr className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3">Time</th>
+                          <th className="px-6 py-3">Sender (Tenant)</th>
+                          <th className="px-6 py-3">Campaign</th>
+                          <th className="px-6 py-3">Recipient</th>
+                          <th className="px-6 py-3 text-right">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 bg-white">
+                        {globalLogs.length === 0 && !loading && !error && (
+                          <tr>
+                            <td colSpan="5" className="px-6 py-8 text-center text-gray-500 text-sm">
+                              No recent activity found.
+                            </td>
+                          </tr>
+                        )}
+                        {globalLogs.map((log) => (
+                          <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-3 text-xs text-gray-500 whitespace-nowrap">
+                              {new Date(log.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            </td>
+                            <td className="px-6 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">
+                              {log.sender_email}
+                            </td>
+                            <td className="px-6 py-3 text-sm text-gray-500 whitespace-nowrap">
+                              {log.campaign_name}
+                            </td>
+                            <td className="px-6 py-3 text-sm text-gray-500 whitespace-nowrap">
+                              {log.recipient_email}
+                            </td>
+                            <td className="px-6 py-3 whitespace-nowrap text-right">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                log.status === "sent" ? "bg-green-100 text-green-700" :
+                                log.status === "failed" || log.status === "bounced" ? "bg-red-100 text-red-700" :
+                                "bg-gray-100 text-gray-700"
+                              }`}>
+                                {log.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}

@@ -52,3 +52,12 @@ type GlobalStats struct {
 	TotalSent     int `json:"total_sent"`
 	TotalFailures int `json:"total_failures"`
 }
+
+type GlobalEmailLog struct {
+	ID             int       `json:"id"`
+	SenderEmail    string    `json:"sender_email"`
+	CampaignName   string    `json:"campaign_name"`
+	RecipientEmail string    `json:"recipient_email"`
+	Status         string    `json:"status"`
+	SentAt         time.Time `json:"sent_at"`
+}
