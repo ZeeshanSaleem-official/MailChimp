@@ -41,6 +41,9 @@ export default function AdminDashboard() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  // New state for confirming destructive/important actions
+  const [confirmAction, setConfirmAction] = useState(null);
+
   const fetchUsers = async () => {
     try {
       const response = await apiClient.get("/api/admin/users");
@@ -110,6 +113,8 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error("Failed to update status:", err);
       setError("Failed to update user status.");
+    } finally {
+      setConfirmAction(null);
     }
   };
 
@@ -126,6 +131,8 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error("Failed to update role:", err);
       setError("Failed to update user role.");
+    } finally {
+      setConfirmAction(null);
     }
   };
 
@@ -314,14 +321,14 @@ export default function AdminDashboard() {
                               {user.user !== "admin" && (
                                 <>
                                   <button
-                                    onClick={() => toggleUserRole(user.id, user.user || "user")}
+                                    onClick={() => setConfirmAction({ type: 'role', user, actionStr: 'promote' })}
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-300 text-blue-600 hover:bg-blue-50 transition-colors"
                                   >
                                     <ShieldCheck size={14} />
                                     Make Admin
                                   </button>
                                   <button
-                                    onClick={() => toggleUserStatus(user.id, user.status || "active")}
+                                    onClick={() => setConfirmAction({ type: 'status', user, actionStr: user.status === "active" || !user.status ? "suspend" : "activate" })}
                                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border transition-colors ${user.status === "active" || !user.status ? "border-gray-300 text-red-600 hover:bg-red-50" : "border-gray-300 text-green-600 hover:bg-green-50"}`}
                                   >
                                     <Power size={14} />
@@ -331,7 +338,7 @@ export default function AdminDashboard() {
                               )}
                               {user.user === "admin" && (
                                 <button
-                                  onClick={() => toggleUserRole(user.id, "admin")}
+                                  onClick={() => setConfirmAction({ type: 'role', user, actionStr: 'revoke admin rights for' })}
                                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-300 text-orange-600 hover:bg-orange-50 transition-colors"
                                 >
                                   <ShieldAlert size={14} />
@@ -479,6 +486,44 @@ export default function AdminDashboard() {
               <button onClick={() => setShowLogoutModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
               <button onClick={confirmLogout} disabled={isLoggingOut} className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700">
                 {isLoggingOut ? "Signing out..." : "Sign Out"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ACTION CONFIRMATION MODAL */}
+      {confirmAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden">
+            <div className="px-6 py-5">
+              <h3 className="text-lg font-medium text-gray-900 mb-2 capitalize">{confirmAction.actionStr} User?</h3>
+              <p className="text-sm text-gray-500">
+                Are you sure you want to {confirmAction.actionStr} <strong>{confirmAction.user.email}</strong>? 
+                {confirmAction.type === 'role' && " This will change their access level on the platform."}
+                {confirmAction.type === 'status' && " This will affect their ability to send emails."}
+              </p>
+            </div>
+            <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3">
+              <button 
+                onClick={() => setConfirmAction(null)} 
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  if (confirmAction.type === 'role') {
+                    toggleUserRole(confirmAction.user.id, confirmAction.user.user || "user");
+                  } else {
+                    toggleUserStatus(confirmAction.user.id, confirmAction.user.status || "active");
+                  }
+                }} 
+                className={`px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md ${
+                  confirmAction.actionStr === "suspend" || confirmAction.actionStr === "revoke admin rights for" ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"
+                }`}
+              >
+                Confirm Action
               </button>
             </div>
           </div>
