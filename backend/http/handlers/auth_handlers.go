@@ -38,8 +38,8 @@ func SignUpHandlers(store storage.Storage) http.HandlerFunc {
 			http.Error(w, "Error while securing password", http.StatusBadRequest)
 			return
 		}
-		// Creating user and Save to Database
-		err = store.CreateUser(payload.Email, string(hash), payload.UserRole)
+		// Force role to "user" for all public signups to prevent privilege escalation
+		err = store.CreateUser(payload.Email, string(hash), "user")
 		if err != nil {
 			fmt.Println("DB ERROR:", err)
 			http.Error(w, "Database failed to create user", http.StatusInternalServerError)

@@ -18,6 +18,7 @@ import (
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/storage/postgres"
 	"github.com/go-co-op/gocron"
 	"github.com/rs/cors"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func main() {
@@ -55,6 +56,12 @@ func main() {
 
 	// Initialize  Clean Architecture Storage!
 	store := postgres.NewPostgresStore(db)
+
+	// Seed the database with a default admin if none exist
+	err = seedAdminIfMissing(store)
+	if err != nil {
+		fmt.Println("Warning: Failed to seed admin account:", err)
+	}
 
 	// Scheduling the campaign
 	s := gocron.NewScheduler(time.Local)
@@ -160,4 +167,34 @@ func executeEmail(r types.EmailData, templateName string) (string, error) {
 		return "", err
 	}
 	return tpl.String(), nil
+}
+
+// seedAdminIfMissing checks the database for any admin accounts.
+// If none are found, it creates a fail-safe Super Admin.
+func seedAdminIfMissing(store storage.Storage) error {
+	users, err := store.GetAllUsers()
+	if err != nil {
+		return err
+	}
+
+	for _, u := range users {
+		if u.Role == "admin" {
+			// An admin already exists, no need to seed.
+			return nil
+		}
+	}
+
+	fmt.Println(" No admin account detected. Seeding default Super Admin...")
+	hash, err := bcrypt.GenerateFromPassword([]byte("admin123"), 10)
+	if err != nil {
+		return err
+	}
+
+	err = store.CreateUser("admin@mailchimp.local", string(hash), "admin")
+	if err != nil {
+		return err
+	}
+	
+	fmt.Println("✅ Default Super Admin created! (Email: admin@mailchimp.local | Password: admin123)")
+	return nil
 }
