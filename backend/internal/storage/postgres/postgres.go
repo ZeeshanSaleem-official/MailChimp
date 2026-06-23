@@ -203,6 +203,15 @@ func (p *PostgresStore) UpdateUserStatus(userID int, status string) error {
 	return err
 }
 
+// UpdateUserRole changes a user's role (e.g., user, admin)
+func (p *PostgresStore) UpdateUserRole(userID int, role string) error {
+	// In the DB it is called userRole, but let's make sure:
+	// db.go: userRole VARCHAR(150) NOT NULL
+	query := `UPDATE users SET userRole = $1 WHERE id = $2`
+	_, err := p.db.Exec(query, role, userID)
+	return err
+}
+
 // GetGlobalStats fetches platform-wide statistics for the Super Admin
 func (p *PostgresStore) GetGlobalStats() (types.GlobalStats, error) {
 	var stats types.GlobalStats

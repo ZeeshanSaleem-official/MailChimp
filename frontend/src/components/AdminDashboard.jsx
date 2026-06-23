@@ -13,7 +13,9 @@ import {
   Activity,
   Server,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  ShieldAlert,
+  ShieldCheck
 } from "lucide-react";
 import apiClient from "../api/axios";
 
@@ -108,6 +110,22 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error("Failed to update status:", err);
       setError("Failed to update user status.");
+    }
+  };
+
+  const toggleUserRole = async (userId, currentRole) => {
+    const newRole = currentRole === "admin" ? "user" : "admin";
+    try {
+      await apiClient.put("/api/admin/users/role", {
+        user_id: userId,
+        role: newRole,
+      });
+      fetchUsers();
+      setSuccessMessage(`User promoted to ${newRole}`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      console.error("Failed to update role:", err);
+      setError("Failed to update user role.");
     }
   };
 
@@ -292,14 +310,32 @@ export default function AdminDashboard() {
                                 {user.status || "active"}
                               </span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end gap-2">
                               {user.user !== "admin" && (
+                                <>
+                                  <button
+                                    onClick={() => toggleUserRole(user.id, user.user || "user")}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-300 text-blue-600 hover:bg-blue-50 transition-colors"
+                                  >
+                                    <ShieldCheck size={14} />
+                                    Make Admin
+                                  </button>
+                                  <button
+                                    onClick={() => toggleUserStatus(user.id, user.status || "active")}
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border transition-colors ${user.status === "active" || !user.status ? "border-gray-300 text-red-600 hover:bg-red-50" : "border-gray-300 text-green-600 hover:bg-green-50"}`}
+                                  >
+                                    <Power size={14} />
+                                    {user.status === "active" || !user.status ? "Suspend" : "Activate"}
+                                  </button>
+                                </>
+                              )}
+                              {user.user === "admin" && (
                                 <button
-                                  onClick={() => toggleUserStatus(user.id, user.status || "active")}
-                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border transition-colors ${user.status === "active" || !user.status ? "border-gray-300 text-red-600 hover:bg-red-50" : "border-gray-300 text-green-600 hover:bg-green-50"}`}
+                                  onClick={() => toggleUserRole(user.id, "admin")}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-300 text-orange-600 hover:bg-orange-50 transition-colors"
                                 >
-                                  <Power size={14} />
-                                  {user.status === "active" || !user.status ? "Suspend" : "Activate"}
+                                  <ShieldAlert size={14} />
+                                  Revoke Admin
                                 </button>
                               )}
                             </td>

@@ -60,6 +60,40 @@ func UpdateUserStatusHandler(store storage.Storage) http.HandlerFunc {
 	}
 }
 
+// UpdateUserRoleHandler toggles a user's role (make admin)
+func UpdateUserRoleHandler(store storage.Storage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var payload struct {
+			UserID int    `json:"user_id"`
+			Role   string `json:"role"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "Invalid request payload", http.StatusBadRequest)
+			return
+		}
+
+		if payload.Role != "admin" && payload.Role != "user" {
+			http.Error(w, "Invalid role", http.StatusBadRequest)
+			return
+		}
+
+		err := store.UpdateUserRole(payload.UserID, payload.Role)
+		if err != nil {
+			http.Error(w, "Failed to update user role", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"message": "User role updated successfully!"})
+	}
+}
+
 // GetGlobalStatsHandler fetches system-wide stats (Admin only)
 func GetGlobalStatsHandler(store storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
