@@ -30,9 +30,13 @@ export default function ComposeCampaign() {
       setStatusMsg(response.data.message || "Campaign launched successfully!");
     } catch (error) {
       console.error("Transmission failed:", error);
-      setStatusMsg(
-        error.response?.data || "Error: Could not reach the backend.",
-      );
+      let errMsg = "Error: Could not reach the backend.";
+      if (typeof error.response?.data === 'string') {
+        errMsg = error.response.data;
+      } else if (error.response?.data?.message) {
+        errMsg = error.response.data.message;
+      }
+      setStatusMsg(errMsg);
     } finally {
       setIsSending(false);
     }

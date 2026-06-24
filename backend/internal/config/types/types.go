@@ -33,6 +33,7 @@ type User struct {
 	HashPassword string    `json:"-"` // for security password written as -
 	Role         string    `json:"user"`
 	Status       string    `json:"status"`
+	DailyQuota   int       `json:"daily_quota"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 

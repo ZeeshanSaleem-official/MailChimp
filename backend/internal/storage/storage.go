@@ -14,6 +14,9 @@ type Storage interface {
 	// users
 	CreateUser(email string, passwordHash string, userRole string) error
 	GetUser(email string) (*types.User, error)
+	GetUserByID(id int) (*types.User, error)
+	GetDailySentCount(userID int) (int, error)
+	UpdateUserQuota(userID int, quota int) error
 	// admin
 	GetAllUsers() ([]types.User, error)
 	UpdateUserStatus(userID int, status string) error

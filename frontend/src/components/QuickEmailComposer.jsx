@@ -11,10 +11,12 @@ export default function QuickComposeCampaign() {
   const [body, setBody] = useState("");
   const [segment, setSegment] = useState("all");
   const [status, setStatus] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleSendCampaign = async (e) => {
     e.preventDefault();
     setStatus("loading");
+    setErrorMessage("");
     try {
       const response = await apiClient.post("/api/campaign/send", {
         subject: subject,
@@ -29,6 +31,11 @@ export default function QuickComposeCampaign() {
     } catch (error) {
       console.error("Campaign dispatch error:", error);
       setStatus("error");
+      setErrorMessage(
+        typeof error.response?.data === 'string' 
+          ? error.response.data 
+          : "Error sending campaign. Is the Go server running?"
+      );
     }
   };
   return (
@@ -113,7 +120,7 @@ export default function QuickComposeCampaign() {
         <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 text-red-700">
           <AlertCircle className="shrink-0 mt-0.5" size={18} />
           <p className="text-sm font-medium">
-            Error sending campaign. Is the Go server running?
+            {errorMessage}
           </p>
         </div>
       )}

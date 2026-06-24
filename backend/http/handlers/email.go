@@ -35,7 +35,7 @@ func GetRecipientHandler(store storage.Storage) http.HandlerFunc {
 }
 
 // Run Campaign manually
-func RunCampaignHandler(triggerWorker func(userID int, camp types.Campaign)) http.HandlerFunc {
+func RunCampaignHandler(store storage.Storage, triggerWorker func(userID int, camp types.Campaign)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if r.Method == "OPTIONS" {
@@ -62,6 +62,27 @@ func RunCampaignHandler(triggerWorker func(userID int, camp types.Campaign)) htt
 
 		if newCampaign.TemplateFile == "" {
 			newCampaign.TemplateFile = "promo.tmpl"
+		}
+
+		// Check Quota before running campaign
+		user, err := store.GetUserByID(userID)
+		if err != nil {
+			http.Error(w, "Failed to get user", http.StatusInternalServerError)
+			return
+		}
+		sentCount, err := store.GetDailySentCount(userID)
+		if err != nil {
+			http.Error(w, "Failed to check daily sent count", http.StatusInternalServerError)
+			return
+		}
+		users, err := store.GetAllRecipients(userID, newCampaign.TargetSegment)
+		if err != nil {
+			http.Error(w, "Failed to fetch recipients", http.StatusInternalServerError)
+			return
+		}
+		if sentCount+len(users) > user.DailyQuota {
+			http.Error(w, fmt.Sprintf("Daily quota exceeded. Used: %d, Limit: %d, Required: %d", sentCount, user.DailyQuota, len(users)), http.StatusTooManyRequests)
+			return
 		}
 
 		// // Trigger the Go workers in the background via the callback
@@ -180,6 +201,22 @@ func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer) http.Handle
 			http.Error(w, "Error while calling backend for users", http.StatusInternalServerError)
 			return
 		}
+
+		// Check Quota
+		user, err := store.GetUserByID(userID)
+		if err != nil {
+			http.Error(w, "Failed to get user", http.StatusInternalServerError)
+			return
+		}
+		sentCount, err := store.GetDailySentCount(userID)
+		if err != nil {
+			http.Error(w, "Failed to check daily sent count", http.StatusInternalServerError)
+			return
+		}
+		if sentCount+len(users) > user.DailyQuota {
+			http.Error(w, fmt.Sprintf("Daily quota exceeded. Used: %d, Limit: %d, Required: %d", sentCount, user.DailyQuota, len(users)), http.StatusTooManyRequests)
+			return
+		}
 		// Loop through whole segment and send emails
 		go func() {
 			for _, user := range users {
@@ -234,6 +271,23 @@ func ResendEmailHandler(store storage.Storage, mail *mailer.Mailer) http.Handler
 			http.Error(w, "Invalid JSON Payload", http.StatusBadRequest)
 			return
 		}
+
+		// Check Quota
+		user, err := store.GetUserByID(userID)
+		if err != nil {
+			http.Error(w, "Failed to get user", http.StatusInternalServerError)
+			return
+		}
+		sentCount, err := store.GetDailySentCount(userID)
+		if err != nil {
+			http.Error(w, "Failed to check daily sent count", http.StatusInternalServerError)
+			return
+		}
+		if sentCount+1 > user.DailyQuota {
+			http.Error(w, fmt.Sprintf("Daily quota exceeded. Used: %d, Limit: %d, Required: 1", sentCount, user.DailyQuota), http.StatusTooManyRequests)
+			return
+		}
+
 		//send email again
 		err = mail.SendEmail(payload.Email, "Tech Bird: Delivery Retry",
 			"<h1>We are retrying your email!</h1><p>Our engine successfully re-fired this message.</p>")

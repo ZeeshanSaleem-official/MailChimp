@@ -41,7 +41,8 @@ func InitDB(connSTr string) (*sql.DB, error) {
 		email VARCHAR(150) UNIQUE NOT NULL,
 		password_hash TEXT NOT NULL,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		userRole VARCHAR(150) NOT NULL
+		userRole VARCHAR(150) NOT NULL,
+		daily_quota INTEGER DEFAULT 500
 	)
 	`
 	_, err = db.Exec(userQuery)
@@ -54,6 +55,12 @@ func InitDB(connSTr string) (*sql.DB, error) {
 	_, err = db.Exec(alterUserQuery)
 	if err != nil {
 		fmt.Printf("Warning: failed to add status column to users: %v\n", err)
+	}
+
+	alterQuotaQuery := `ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_quota INTEGER DEFAULT 500;`
+	_, err = db.Exec(alterQuotaQuery)
+	if err != nil {
+		fmt.Printf("Warning: failed to add daily_quota column to users: %v\n", err)
 	}
 
 	// email, and foreign key should be unique even name or remaining fields remains same

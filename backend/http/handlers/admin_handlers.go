@@ -131,3 +131,37 @@ func GetGlobalLogsHandler(store storage.Storage) http.HandlerFunc {
 		json.NewEncoder(w).Encode(logs)
 	}
 }
+
+// UpdateUserQuotaHandler updates a user's daily quota (Admin only)
+func UpdateUserQuotaHandler(store storage.Storage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var payload struct {
+			UserID int `json:"user_id"`
+			Quota  int `json:"daily_quota"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "Invalid input", http.StatusBadRequest)
+			return
+		}
+
+		if payload.Quota < 0 {
+			http.Error(w, "Invalid quota", http.StatusBadRequest)
+			return
+		}
+
+		err := store.UpdateUserQuota(payload.UserID, payload.Quota)
+		if err != nil {
+			http.Error(w, "Failed to update user quota", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"message": "User quota updated successfully!"})
+	}
+}

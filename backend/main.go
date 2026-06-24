@@ -104,7 +104,7 @@ func main() {
 
 	// Authorized  Handlers
 	mux.HandleFunc("/api/recipients", handlers.AuthMiddleware(cfg.JWTSecret, handlers.GetRecipientHandler(store)))
-	mux.HandleFunc("/api/campaign/run", handlers.AuthMiddleware(cfg.JWTSecret, handlers.RunCampaignHandler(triggerCallback)))
+	mux.HandleFunc("/api/campaign/run", handlers.AuthMiddleware(cfg.JWTSecret, handlers.RunCampaignHandler(store, triggerCallback)))
 	mux.HandleFunc("/api/recipients/upload", handlers.AuthMiddleware(cfg.JWTSecret, handlers.UploadCSVHandler(store)))
 	mux.HandleFunc("/api/campaign/send", handlers.AuthMiddleware(cfg.JWTSecret, handlers.SendCampaignHandler(store, testMailer)))
 	mux.HandleFunc("/api/recipients/resend", handlers.AuthMiddleware(cfg.JWTSecret, handlers.ResendEmailHandler(store, testMailer)))
@@ -120,6 +120,7 @@ func main() {
 	mux.HandleFunc("/api/admin/users", handlers.AdminMiddleware(cfg.JWTSecret, handlers.GetAllUsersHandler(store)))
 	mux.HandleFunc("/api/admin/users/status", handlers.AdminMiddleware(cfg.JWTSecret, handlers.UpdateUserStatusHandler(store)))
 	mux.HandleFunc("/api/admin/users/role", handlers.AdminMiddleware(cfg.JWTSecret, handlers.UpdateUserRoleHandler(store)))
+	mux.HandleFunc("/api/admin/users/quota", handlers.AdminMiddleware(cfg.JWTSecret, handlers.UpdateUserQuotaHandler(store)))
 	mux.HandleFunc("/api/admin/stats", handlers.AdminMiddleware(cfg.JWTSecret, handlers.GetGlobalStatsHandler(store)))
 	mux.HandleFunc("/api/admin/logs", handlers.AdminMiddleware(cfg.JWTSecret, handlers.GetGlobalLogsHandler(store)))
 

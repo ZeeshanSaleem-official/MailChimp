@@ -73,11 +73,29 @@ func (p *PostgresStore) CreateUser(email string, hashPassword string, userRole s
 
 // Getting a user for validation
 func (p *PostgresStore) GetUser(email string) (*types.User, error) {
-	query := `SELECT id, email, password_hash, userRole, status FROM users WHERE email = $1`
+	query := `SELECT id, email, password_hash, userRole, status, daily_quota FROM users WHERE email = $1`
 	rows := p.db.QueryRow(query, email)
 	var u types.User
 	var status sql.NullString
-	err := rows.Scan(&u.ID, &u.Email, &u.HashPassword, &u.Role, &status)
+	err := rows.Scan(&u.ID, &u.Email, &u.HashPassword, &u.Role, &status, &u.DailyQuota)
+	if err != nil {
+		return nil, err
+	}
+	if status.Valid {
+		u.Status = status.String
+	} else {
+		u.Status = "active"
+	}
+	return &u, nil
+}
+
+// Getting a user by ID
+func (p *PostgresStore) GetUserByID(id int) (*types.User, error) {
+	query := `SELECT id, email, password_hash, userRole, status, daily_quota FROM users WHERE id = $1`
+	rows := p.db.QueryRow(query, id)
+	var u types.User
+	var status sql.NullString
+	err := rows.Scan(&u.ID, &u.Email, &u.HashPassword, &u.Role, &status, &u.DailyQuota)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +189,7 @@ func (p *PostgresStore) GetEmailLogs(userID int) ([]types.EmailLog, error) {
 
 // GetAllUsers fetches all users for the Admin Dashboard
 func (p *PostgresStore) GetAllUsers() ([]types.User, error) {
-	query := `SELECT id, email, userRole, status, created_at FROM users ORDER BY id ASC`
+	query := `SELECT id, email, userRole, status, daily_quota, created_at FROM users ORDER BY id ASC`
 	rows, err := p.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -182,7 +200,7 @@ func (p *PostgresStore) GetAllUsers() ([]types.User, error) {
 	for rows.Next() {
 		var u types.User
 		var status sql.NullString
-		err := rows.Scan(&u.ID, &u.Email, &u.Role, &status, &u.CreatedAt)
+		err := rows.Scan(&u.ID, &u.Email, &u.Role, &status, &u.DailyQuota, &u.CreatedAt)
 		if err != nil {
 			continue
 		}
@@ -210,6 +228,21 @@ func (p *PostgresStore) UpdateUserRole(userID int, role string) error {
 	query := `UPDATE users SET userRole = $1 WHERE id = $2`
 	_, err := p.db.Exec(query, role, userID)
 	return err
+}
+
+// UpdateUserQuota updates the daily sending limit for a user
+func (p *PostgresStore) UpdateUserQuota(userID int, quota int) error {
+	query := `UPDATE users SET daily_quota = $1 WHERE id = $2`
+	_, err := p.db.Exec(query, quota, userID)
+	return err
+}
+
+// GetDailySentCount fetches the total emails sent by a user today
+func (p *PostgresStore) GetDailySentCount(userID int) (int, error) {
+	query := `SELECT COUNT(*) FROM email_logs WHERE user_id = $1 AND sent_at >= CURRENT_DATE`
+	var count int
+	err := p.db.QueryRow(query, userID).Scan(&count)
+	return count, err
 }
 
 // GetGlobalStats fetches platform-wide statistics for the Super Admin

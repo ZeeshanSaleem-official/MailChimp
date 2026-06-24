@@ -43,6 +43,8 @@ export default function AdminDashboard() {
 
   // New state for confirming destructive/important actions
   const [confirmAction, setConfirmAction] = useState(null);
+  const [editQuotaUser, setEditQuotaUser] = useState(null);
+  const [newQuotaValue, setNewQuotaValue] = useState(500);
 
   const fetchUsers = async () => {
     try {
@@ -133,6 +135,23 @@ export default function AdminDashboard() {
       setError("Failed to update user role.");
     } finally {
       setConfirmAction(null);
+    }
+  };
+
+  const updateUserQuota = async () => {
+    try {
+      await apiClient.put("/api/admin/users/quota", {
+        user_id: editQuotaUser.id,
+        daily_quota: parseInt(newQuotaValue, 10),
+      });
+      fetchUsers();
+      setSuccessMessage(`User quota updated to ${newQuotaValue}`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      console.error("Failed to update quota:", err);
+      setError("Failed to update user quota.");
+    } finally {
+      setEditQuotaUser(null);
     }
   };
 
@@ -292,6 +311,7 @@ export default function AdminDashboard() {
                           <th className="px-6 py-3">Email</th>
                           <th className="px-6 py-3">Role</th>
                           <th className="px-6 py-3">Status</th>
+                          <th className="px-6 py-3">Quota</th>
                           <th className="px-6 py-3 text-right">Actions</th>
                         </tr>
                       </thead>
@@ -317,6 +337,7 @@ export default function AdminDashboard() {
                                 {user.status || "active"}
                               </span>
                             </td>
+                            <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">{user.daily_quota || 500}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end gap-2">
                               {user.user !== "admin" && (
                                 <>
@@ -345,6 +366,12 @@ export default function AdminDashboard() {
                                   Revoke Admin
                                 </button>
                               )}
+                              <button
+                                onClick={() => { setEditQuotaUser(user); setNewQuotaValue(user.daily_quota || 500); }}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
+                              >
+                                Edit Quota
+                              </button>
                             </td>
                           </tr>
                         ))}
@@ -524,6 +551,41 @@ export default function AdminDashboard() {
                 }`}
               >
                 Confirm Action
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT QUOTA MODAL */}
+      {editQuotaUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden">
+            <div className="px-6 py-5">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Update User Quota</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Set the daily sending limit for <strong>{editQuotaUser.email}</strong>.
+              </p>
+              <input
+                type="number"
+                value={newQuotaValue}
+                onChange={(e) => setNewQuotaValue(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                min="0"
+              />
+            </div>
+            <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3">
+              <button 
+                onClick={() => setEditQuotaUser(null)} 
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={updateUserQuota} 
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+              >
+                Save
               </button>
             </div>
           </div>
