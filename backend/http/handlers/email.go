@@ -166,7 +166,7 @@ func UploadCSVHandler(store storage.Storage) http.HandlerFunc {
 }
 
 // For sending the campaign
-func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer) http.HandlerFunc {
+func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer, isEngineRunning func() bool, isUserSuspended func(int) bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if r.Method == http.MethodOptions {
@@ -220,6 +220,14 @@ func SendCampaignHandler(store storage.Storage, mail *mailer.Mailer) http.Handle
 		// Loop through whole segment and send emails
 		go func() {
 			for _, user := range users {
+				if isEngineRunning != nil && !isEngineRunning() {
+					fmt.Println("Quick Campaign: Global Engine paused/stopped. Halting mid-batch processing.")
+					break
+				}
+				if isUserSuspended != nil && isUserSuspended(userID) {
+					fmt.Printf("Quick Campaign: Tenant-Level Kill Switch: User %d is suspended. Halting mid-batch processing.\n", userID)
+					break
+				}
 				err := mail.SendEmail(user.Email, payload.Subject, payload.Body)
 				if err != nil {
 					fmt.Printf("Error while sending mail to %s\r\n%v\n", user.Email, err)

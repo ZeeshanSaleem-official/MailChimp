@@ -45,6 +45,7 @@ export default function AdminDashboard() {
 
   // New state for confirming destructive/important actions
   const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmEngineStatus, setConfirmEngineStatus] = useState(null);
   const [editQuotaUser, setEditQuotaUser] = useState(null);
   const [newQuotaValue, setNewQuotaValue] = useState(500);
 
@@ -419,21 +420,21 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex items-center gap-3">
                       <button
-                        onClick={() => toggleEngineStatus("running")}
+                        onClick={() => setConfirmEngineStatus("running")}
                         disabled={isUpdatingEngine || engineStatus === "running"}
                         className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${engineStatus === "running" ? "bg-green-100 text-green-800 cursor-not-allowed" : "bg-white border border-gray-300 text-gray-700 hover:bg-green-50 hover:text-green-700"}`}
                       >
                         Run
                       </button>
                       <button
-                        onClick={() => toggleEngineStatus("paused")}
+                        onClick={() => setConfirmEngineStatus("paused")}
                         disabled={isUpdatingEngine || engineStatus === "paused"}
                         className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${engineStatus === "paused" ? "bg-yellow-100 text-yellow-800 cursor-not-allowed" : "bg-white border border-gray-300 text-gray-700 hover:bg-yellow-50 hover:text-yellow-700"}`}
                       >
                         Pause
                       </button>
                       <button
-                        onClick={() => toggleEngineStatus("stopped")}
+                        onClick={() => setConfirmEngineStatus("stopped")}
                         disabled={isUpdatingEngine || engineStatus === "stopped"}
                         className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${engineStatus === "stopped" ? "bg-red-100 text-red-800 cursor-not-allowed" : "bg-white border border-gray-300 text-gray-700 hover:bg-red-50 hover:text-red-700"}`}
                       >
@@ -631,6 +632,44 @@ export default function AdminDashboard() {
                 }`}
               >
                 Confirm Action
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ENGINE ACTION CONFIRMATION MODAL */}
+      {confirmEngineStatus && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden">
+            <div className="px-6 py-5">
+              <h3 className="text-lg font-medium text-gray-900 mb-2 capitalize">
+                {confirmEngineStatus === "running" ? "Start Engine?" : confirmEngineStatus === "paused" ? "Pause Engine?" : "Stop Engine?"}
+              </h3>
+              <p className="text-sm text-gray-500">
+                Are you sure you want to change the Global Engine Status to <strong>{confirmEngineStatus}</strong>?
+                {confirmEngineStatus === "paused" && " This will pause all active campaigns mid-batch across the entire platform."}
+                {confirmEngineStatus === "stopped" && " This will immediately halt all global operations."}
+                {confirmEngineStatus === "running" && " This will resume processing all scheduled and active campaigns."}
+              </p>
+            </div>
+            <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3">
+              <button 
+                onClick={() => setConfirmEngineStatus(null)} 
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  toggleEngineStatus(confirmEngineStatus);
+                  setConfirmEngineStatus(null);
+                }} 
+                className={`px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md ${
+                  confirmEngineStatus === "running" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"
+                }`}
+              >
+                Confirm
               </button>
             </div>
           </div>

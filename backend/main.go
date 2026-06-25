@@ -134,10 +134,21 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Authorized  Handlers
+	// Callbacks for Kill Switch
+	isEngineRunning := func() bool {
+		return GlobalEngineStatus.Load().(string) == "running"
+	}
+	isUserSuspendedCheck := func(userID int) bool {
+		if suspended, ok := SuspendedUsers.Load(userID); ok {
+			return suspended.(bool)
+		}
+		return false
+	}
+
 	mux.HandleFunc("/api/recipients", handlers.AuthMiddleware(cfg.JWTSecret, handlers.GetRecipientHandler(store)))
 	mux.HandleFunc("/api/campaign/run", handlers.AuthMiddleware(cfg.JWTSecret, handlers.RunCampaignHandler(store, triggerCallback)))
 	mux.HandleFunc("/api/recipients/upload", handlers.AuthMiddleware(cfg.JWTSecret, handlers.UploadCSVHandler(store)))
-	mux.HandleFunc("/api/campaign/send", handlers.AuthMiddleware(cfg.JWTSecret, handlers.SendCampaignHandler(store, testMailer)))
+	mux.HandleFunc("/api/campaign/send", handlers.AuthMiddleware(cfg.JWTSecret, handlers.SendCampaignHandler(store, testMailer, isEngineRunning, isUserSuspendedCheck)))
 	mux.HandleFunc("/api/recipients/resend", handlers.AuthMiddleware(cfg.JWTSecret, handlers.ResendEmailHandler(store, testMailer)))
 	mux.HandleFunc("/api/recipients/delete", handlers.AuthMiddleware(cfg.JWTSecret, handlers.DeleteRecipient(store)))
 	// Landing Handlers
