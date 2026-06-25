@@ -109,7 +109,14 @@ func (p *PostgresStore) GetUserByID(id int) (*types.User, error) {
 
 // Fetch Campaigns that are ready to send
 func (p *PostgresStore) GetPendingCampaigns() ([]types.Campaign, error) {
-	query := `SELECT id, user_id, name, subject, template_file, target_segment, status FROM campaigns WHERE status = 'pending' AND scheduled_at <= NOW()`
+	query := `
+		SELECT c.id, c.user_id, c.name, c.subject, c.template_file, c.target_segment, c.status 
+		FROM campaigns c
+		JOIN users u ON c.user_id = u.id
+		WHERE c.status = 'pending' 
+		  AND c.scheduled_at <= NOW() 
+		  AND (u.status = 'active' OR u.status IS NULL)
+	`
 	rows, err := p.db.Query(query)
 	if err != nil {
 		return nil, err

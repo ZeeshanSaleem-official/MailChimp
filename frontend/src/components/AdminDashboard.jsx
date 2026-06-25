@@ -483,23 +483,45 @@ export default function AdminDashboard() {
                           const isExpanded = expandedSenders[sender];
                           const logs = groupedLogs[sender];
                           const lastActive = new Date(Math.max(...logs.map(l => new Date(l.sent_at).getTime())));
+                          const senderUser = users.find(u => u.email === sender);
+                          const isSuspended = senderUser?.status === "suspended" || senderUser?.status === "banned";
 
                           return (
                             <React.Fragment key={sender}>
                               <tr
-                                onClick={() => toggleSender(sender)}
-                                className="hover:bg-gray-50 transition-colors cursor-pointer"
+                                className="hover:bg-gray-50 transition-colors"
                               >
-                                <td className="px-6 py-4 text-gray-400">
+                                <td 
+                                  className="px-6 py-4 text-gray-400 cursor-pointer"
+                                  onClick={() => toggleSender(sender)}
+                                >
                                   {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                                 </td>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">
+                                <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap flex items-center gap-2">
                                   {sender}
+                                  {senderUser && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setConfirmAction({ type: 'status', user: senderUser, actionStr: isSuspended ? "activate" : "suspend" });
+                                      }}
+                                      title={isSuspended ? "Activate Sender" : "Suspend Sender"}
+                                      className={`p-1 rounded-md transition-colors ${isSuspended ? "text-red-600 bg-red-100 hover:bg-red-200" : "text-gray-400 hover:text-red-600 hover:bg-red-50"}`}
+                                    >
+                                      <ShieldAlert size={16} />
+                                    </button>
+                                  )}
                                 </td>
-                                <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                                <td 
+                                  className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap cursor-pointer"
+                                  onClick={() => toggleSender(sender)}
+                                >
                                   {logs.length} emails logged
                                 </td>
-                                <td className="px-6 py-4 text-xs text-gray-500 whitespace-nowrap text-right">
+                                <td 
+                                  className="px-6 py-4 text-xs text-gray-500 whitespace-nowrap text-right cursor-pointer"
+                                  onClick={() => toggleSender(sender)}
+                                >
                                   {lastActive.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                                 </td>
                               </tr>

@@ -27,7 +27,7 @@ func GetAllUsersHandler(store storage.Storage) http.HandlerFunc {
 }
 
 // UpdateUserStatusHandler updates a user's status (Admin only)
-func UpdateUserStatusHandler(store storage.Storage) http.HandlerFunc {
+func UpdateUserStatusHandler(store storage.Storage, onStatusChange func(userID int, status string)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -53,6 +53,11 @@ func UpdateUserStatusHandler(store storage.Storage) http.HandlerFunc {
 		if err != nil {
 			http.Error(w, "Failed to update user status", http.StatusInternalServerError)
 			return
+		}
+
+		// Update in-memory kill switch map
+		if onStatusChange != nil {
+			onStatusChange(payload.UserID, payload.Status)
 		}
 
 		w.Header().Set("Content-Type", "application/json")

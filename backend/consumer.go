@@ -14,7 +14,11 @@ func emailWorker(workerId int, userID int, ch chan types.Recipient, wg *sync.Wai
 	defer wg.Done()
 	for recipient := range ch {
 		if GlobalEngineStatus.Load().(string) != "running" {
-			fmt.Printf("Worker: %d Engine paused/stopped. Halting mid-batch processing.\n", workerId)
+			fmt.Printf("Worker: %d Global Engine paused/stopped. Halting mid-batch processing.\n", workerId)
+			break
+		}
+		if isSuspended, ok := SuspendedUsers.Load(userID); ok && isSuspended.(bool) {
+			fmt.Printf("Worker: %d Tenant-Level Kill Switch: User %d is suspended. Halting mid-batch processing.\n", workerId, userID)
 			break
 		}
 		// smtpHost := "localhost"

@@ -23,6 +23,7 @@ import (
 )
 
 var GlobalEngineStatus atomic.Value
+var SuspendedUsers sync.Map
 
 func init() {
 	GlobalEngineStatus.Store("running")
@@ -69,6 +70,16 @@ func main() {
 	if err == nil {
 		GlobalEngineStatus.Store(status)
 		fmt.Printf("Loaded Global Engine Status: %s\n", status)
+	}
+
+	// Load currently suspended users into memory for fast kill-switch
+	users, err := store.GetAllUsers()
+	if err == nil {
+		for _, u := range users {
+			if u.Status == "suspended" || u.Status == "banned" {
+				SuspendedUsers.Store(u.ID, true)
+			}
+		}
 	}
 
 	// Seed the database with a default admin if none exist
@@ -137,8 +148,16 @@ func main() {
 	mux.HandleFunc("/api/logs", handlers.AuthMiddleware(cfg.JWTSecret, handlers.GetLogsHandler(store)))
 	
 	// Admin handlers
+	userStatusCallback := func(userID int, status string) {
+		if status == "suspended" || status == "banned" {
+			SuspendedUsers.Store(userID, true)
+		} else {
+			SuspendedUsers.Delete(userID)
+		}
+		fmt.Printf("Tenant-Level Kill Switch: User %d status updated to %s\n", userID, status)
+	}
 	mux.HandleFunc("/api/admin/users", handlers.AdminMiddleware(cfg.JWTSecret, handlers.GetAllUsersHandler(store)))
-	mux.HandleFunc("/api/admin/users/status", handlers.AdminMiddleware(cfg.JWTSecret, handlers.UpdateUserStatusHandler(store)))
+	mux.HandleFunc("/api/admin/users/status", handlers.AdminMiddleware(cfg.JWTSecret, handlers.UpdateUserStatusHandler(store, userStatusCallback)))
 	mux.HandleFunc("/api/admin/users/role", handlers.AdminMiddleware(cfg.JWTSecret, handlers.UpdateUserRoleHandler(store)))
 	mux.HandleFunc("/api/admin/users/quota", handlers.AdminMiddleware(cfg.JWTSecret, handlers.UpdateUserQuotaHandler(store)))
 	mux.HandleFunc("/api/admin/stats", handlers.AdminMiddleware(cfg.JWTSecret, handlers.GetGlobalStatsHandler(store)))
