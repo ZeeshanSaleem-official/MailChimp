@@ -23,4 +23,7 @@ type Storage interface {
 	UpdateUserRole(userID int, role string) error
 	GetGlobalStats() (types.GlobalStats, error)
 	GetGlobalEmailLogs(limit int) ([]types.GlobalEmailLog, error)
+	// engine controls
+	GetEngineStatus() (string, error)
+	UpdateEngineStatus(status string) error
 }

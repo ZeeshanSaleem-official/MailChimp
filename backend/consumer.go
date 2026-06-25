@@ -13,6 +13,10 @@ import (
 func emailWorker(workerId int, userID int, ch chan types.Recipient, wg *sync.WaitGroup, camp types.Campaign, store storage.Storage, smtpHost string, smtpPort int, smtpUser string, smtpPass string) {
 	defer wg.Done()
 	for recipient := range ch {
+		if GlobalEngineStatus.Load().(string) != "running" {
+			fmt.Printf("Worker: %d Engine paused/stopped. Halting mid-batch processing.\n", workerId)
+			break
+		}
 		// smtpHost := "localhost"
 		// smtpPort := "1025"
 

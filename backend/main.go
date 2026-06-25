@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ZeeshanSaleem-official/MailChimp/http/handlers"
@@ -20,6 +21,12 @@ import (
 	"github.com/rs/cors"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var GlobalEngineStatus atomic.Value
+
+func init() {
+	GlobalEngineStatus.Store("running")
+}
 
 func main() {
 	// for testing a mail
@@ -57,6 +64,13 @@ func main() {
 	// Initialize  Clean Architecture Storage!
 	store := postgres.NewPostgresStore(db)
 
+	// Load initial engine status from DB
+	status, err := store.GetEngineStatus()
+	if err == nil {
+		GlobalEngineStatus.Store(status)
+		fmt.Printf("Loaded Global Engine Status: %s\n", status)
+	}
+
 	// Seed the database with a default admin if none exist
 	err = seedAdminIfMissing(store)
 	if err != nil {
@@ -66,6 +80,12 @@ func main() {
 	// Scheduling the campaign
 	s := gocron.NewScheduler(time.Local)
 	s.Every(1).Minute().Do(func() {
+		currentStatus := GlobalEngineStatus.Load().(string)
+		if currentStatus != "running" {
+			fmt.Printf("\n [%v] Scheduler skipped: Engine is currently %s\n", time.Now().Format("15:04:05"), currentStatus)
+			return
+		}
+
 		fmt.Printf("\n [%v] Scheduled Task Triggered: Starting Campaign '%s'...\n", time.Now().Format("15:04:05"), myCampaign.Name)
 		// runCampaign(1, store, db, myCampaign)
 		// fmt.Println(" Campaign execution finished. Waiting for next schedule...")
@@ -123,6 +143,21 @@ func main() {
 	mux.HandleFunc("/api/admin/users/quota", handlers.AdminMiddleware(cfg.JWTSecret, handlers.UpdateUserQuotaHandler(store)))
 	mux.HandleFunc("/api/admin/stats", handlers.AdminMiddleware(cfg.JWTSecret, handlers.GetGlobalStatsHandler(store)))
 	mux.HandleFunc("/api/admin/logs", handlers.AdminMiddleware(cfg.JWTSecret, handlers.GetGlobalLogsHandler(store)))
+
+	// Engine controls
+	engineStatusCallback := func(status string) {
+		GlobalEngineStatus.Store(status)
+		fmt.Printf("Global Engine Status updated to: %s\n", status)
+	}
+	mux.HandleFunc("/api/admin/engine", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			handlers.AdminMiddleware(cfg.JWTSecret, handlers.GetEngineStatusHandler(store))(w, r)
+		} else if r.Method == http.MethodPut {
+			handlers.AdminMiddleware(cfg.JWTSecret, handlers.UpdateEngineStatusHandler(store, engineStatusCallback))(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
 
 	fmt.Println(" Web Server is running on http://localhost:8080")
 	fmt.Println(" Scheduler is running in the background...")

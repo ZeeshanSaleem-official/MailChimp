@@ -32,6 +32,8 @@ export default function AdminDashboard() {
     total_failures: 0
   });
   const [globalLogs, setGlobalLogs] = useState([]);
+  const [engineStatus, setEngineStatus] = useState("running"); // "running", "paused", "stopped"
+  const [isUpdatingEngine, setIsUpdatingEngine] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -61,12 +63,14 @@ export default function AdminDashboard() {
 
   const fetchGlobalStats = async () => {
     try {
-      const [statsRes, logsRes] = await Promise.all([
+      const [statsRes, logsRes, engineRes] = await Promise.all([
         apiClient.get("/api/admin/stats"),
-        apiClient.get("/api/admin/logs")
+        apiClient.get("/api/admin/logs"),
+        apiClient.get("/api/admin/engine")
       ]);
       setGlobalStats(statsRes.data || { total_users: 0, global_queue: 0, total_sent: 0, total_failures: 0 });
       setGlobalLogs(logsRes.data || []);
+      setEngineStatus(engineRes.data?.status || "running");
       setError(null);
     } catch (err) {
       console.error("Fetch stats error:", err);
@@ -152,6 +156,21 @@ export default function AdminDashboard() {
       setError("Failed to update user quota.");
     } finally {
       setEditQuotaUser(null);
+    }
+  };
+
+  const toggleEngineStatus = async (newStatus) => {
+    setIsUpdatingEngine(true);
+    try {
+      await apiClient.put("/api/admin/engine", { status: newStatus });
+      setEngineStatus(newStatus);
+      setSuccessMessage(`Engine status changed to ${newStatus}`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      console.error("Failed to update engine status:", err);
+      setError("Failed to update engine status.");
+    } finally {
+      setIsUpdatingEngine(false);
     }
   };
 
@@ -385,6 +404,45 @@ export default function AdminDashboard() {
             {/* SYSTEM HEALTH TAB CONTENT */}
             {activeTab === "health" && (
               <div className="space-y-6">
+                {/* Global Engine Control (Kill Switch) */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden p-6 mb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                        <Power className={engineStatus === "running" ? "text-green-500" : "text-red-500"} size={20} />
+                        Global Engine Control
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Use this to pause or stop the email dispatch engine globally. 
+                        Currently, the engine is <strong className="uppercase">{engineStatus}</strong>.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => toggleEngineStatus("running")}
+                        disabled={isUpdatingEngine || engineStatus === "running"}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${engineStatus === "running" ? "bg-green-100 text-green-800 cursor-not-allowed" : "bg-white border border-gray-300 text-gray-700 hover:bg-green-50 hover:text-green-700"}`}
+                      >
+                        Run
+                      </button>
+                      <button
+                        onClick={() => toggleEngineStatus("paused")}
+                        disabled={isUpdatingEngine || engineStatus === "paused"}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${engineStatus === "paused" ? "bg-yellow-100 text-yellow-800 cursor-not-allowed" : "bg-white border border-gray-300 text-gray-700 hover:bg-yellow-50 hover:text-yellow-700"}`}
+                      >
+                        Pause
+                      </button>
+                      <button
+                        onClick={() => toggleEngineStatus("stopped")}
+                        disabled={isUpdatingEngine || engineStatus === "stopped"}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${engineStatus === "stopped" ? "bg-red-100 text-red-800 cursor-not-allowed" : "bg-white border border-gray-300 text-gray-700 hover:bg-red-50 hover:text-red-700"}`}
+                      >
+                        Stop (Kill)
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <StatCard title="Total Platform Users" value={globalStats.total_users} icon={<Users size={20} className="text-blue-500" />} />
                   <StatCard title="Emails Globally Sent" value={globalStats.total_sent} icon={<CheckCircle size={20} className="text-green-500" />} />

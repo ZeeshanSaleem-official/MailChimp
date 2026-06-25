@@ -115,6 +115,29 @@ func InitDB(connSTr string) (*sql.DB, error) {
 		return nil, fmt.Errorf("Failed to create Email logs data table: %v", err)
 	}
 
+	// For storing system-wide settings (Kill Switch)
+	systemSettingsQuery := `
+	CREATE TABLE IF NOT EXISTS system_settings (
+		setting_key VARCHAR(50) PRIMARY KEY,
+		setting_value VARCHAR(255) NOT NULL
+	)
+	`
+	_, err = db.Exec(systemSettingsQuery)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create system_settings table: %v", err)
+	}
+
+	// Seed default engine status
+	seedEngineStatus := `
+	INSERT INTO system_settings (setting_key, setting_value) 
+	VALUES ('engine_status', 'running') 
+	ON CONFLICT (setting_key) DO NOTHING
+	`
+	_, err = db.Exec(seedEngineStatus)
+	if err != nil {
+		fmt.Printf("Warning: failed to seed engine_status: %v\n", err)
+	}
+
 	log.Println("Schema initialized.")
 	return db, nil
 }

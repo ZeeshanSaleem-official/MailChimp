@@ -303,3 +303,29 @@ func (p *PostgresStore) GetGlobalEmailLogs(limit int) ([]types.GlobalEmailLog, e
 	}
 	return logs, nil
 }
+
+// GetEngineStatus fetches the global kill switch status
+func (p *PostgresStore) GetEngineStatus() (string, error) {
+	query := `SELECT setting_value FROM system_settings WHERE setting_key = 'engine_status'`
+	var status string
+	err := p.db.QueryRow(query).Scan(&status)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "running", nil // default
+		}
+		return "", err
+	}
+	return status, nil
+}
+
+// UpdateEngineStatus updates the global kill switch status
+func (p *PostgresStore) UpdateEngineStatus(status string) error {
+	query := `
+		INSERT INTO system_settings (setting_key, setting_value) 
+		VALUES ('engine_status', $1) 
+		ON CONFLICT (setting_key) 
+		DO UPDATE SET setting_value = EXCLUDED.setting_value
+	`
+	_, err := p.db.Exec(query, status)
+	return err
+}

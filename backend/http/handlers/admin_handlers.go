@@ -165,3 +165,60 @@ func UpdateUserQuotaHandler(store storage.Storage) http.HandlerFunc {
 		json.NewEncoder(w).Encode(map[string]string{"message": "User quota updated successfully!"})
 	}
 }
+
+// GetEngineStatusHandler fetches the global engine status (Admin only)
+func GetEngineStatusHandler(store storage.Storage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		status, err := store.GetEngineStatus()
+		if err != nil {
+			http.Error(w, "Failed to fetch engine status", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"status": status})
+	}
+}
+
+// UpdateEngineStatusHandler updates the global engine status (Admin only)
+func UpdateEngineStatusHandler(store storage.Storage, onStatusChange func(string)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var payload struct {
+			Status string `json:"status"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "Invalid input", http.StatusBadRequest)
+			return
+		}
+
+		if payload.Status != "running" && payload.Status != "paused" && payload.Status != "stopped" {
+			http.Error(w, "Invalid status", http.StatusBadRequest)
+			return
+		}
+
+		err := store.UpdateEngineStatus(payload.Status)
+		if err != nil {
+			http.Error(w, "Failed to update engine status", http.StatusInternalServerError)
+			return
+		}
+
+		// Sync the in-memory engine status in main
+		if onStatusChange != nil {
+			onStatusChange(payload.Status)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"message": "Engine status updated to " + payload.Status, "status": payload.Status})
+	}
+}
