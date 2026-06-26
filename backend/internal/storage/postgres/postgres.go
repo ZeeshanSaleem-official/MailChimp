@@ -142,6 +142,36 @@ func (p *PostgresStore) UpdateCampaignStatus(campaignID int, status string) erro
 	return err
 }
 
+// InitializeCampaignQueue populates the queue for a new campaign
+func (p *PostgresStore) InitializeCampaignQueue(campaignID int, userID int, segment string) error {
+	// Only insert if they don't already exist for this campaign
+	query := `
+		INSERT INTO campaign_queue (campaign_id, recipient_email, status)
+		SELECT $1, email, 'pending'
+		FROM recipients
+		WHERE user_id = $2 
+		AND ($3 = 'all' OR $3 = '' OR segment = $3)
+		ON CONFLICT (campaign_id, recipient_email) DO NOTHING
+	`
+	_, err := p.db.Exec(query, campaignID, userID, segment)
+	return err
+}
+
+// GetPendingQueueCount returns the number of pending emails for a campaign
+func (p *PostgresStore) GetPendingQueueCount(campaignID int) (int, error) {
+	query := `SELECT COUNT(*) FROM campaign_queue WHERE campaign_id = $1 AND status = 'pending'`
+	var count int
+	err := p.db.QueryRow(query, campaignID).Scan(&count)
+	return count, err
+}
+
+// UpdateQueueEmailStatus updates the status of a specific email in the queue
+func (p *PostgresStore) UpdateQueueEmailStatus(campaignID int, email string, status string) error {
+	query := `UPDATE campaign_queue SET status=$1 WHERE campaign_id = $2 AND recipient_email=$3`
+	_, err := p.db.Exec(query, status, campaignID, email)
+	return err
+}
+
 // Delete a recipient
 func (p *PostgresStore) DeleteRecipient(userID int, recipientID int) error {
 	query := ` DELETE FROM recipients WHERE id = $1 AND user_id = $2`

@@ -8,6 +8,13 @@ type Storage interface {
 	UpdateEmailStatus(userID int, email string, status string) error
 	AddRecipients(userID int, name string, email string, segment string) error
 	DeleteRecipient(userID int, recipientID int) error
+	
+	// campaigns and queue
+	GetPendingCampaigns() ([]types.Campaign, error)
+	UpdateCampaignStatus(campaignID int, status string) error
+	InitializeCampaignQueue(campaignID int, userID int, segment string) error
+	GetPendingQueueCount(campaignID int) (int, error)
+	UpdateQueueEmailStatus(campaignID int, email string, status string) error
 	// logs
 	LogEmailEvent(userID int, campaignName string, recipientEmail string, status string) error
 	GetEmailLogs(userID int) ([]types.EmailLog, error)

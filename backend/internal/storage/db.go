@@ -115,6 +115,22 @@ func InitDB(connSTr string) (*sql.DB, error) {
 		return nil, fmt.Errorf("Failed to create Email logs data table: %v", err)
 	}
 
+	// For persistent campaign queuing (Flawless Resume/Pause)
+	queueQuery := `
+	CREATE TABLE IF NOT EXISTS campaign_queue (
+		id SERIAL PRIMARY KEY,
+		campaign_id INTEGER NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+		recipient_email VARCHAR(150) NOT NULL,
+		status VARCHAR(50) DEFAULT 'pending',
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE(campaign_id, recipient_email)
+	)
+	`
+	_, err = db.Exec(queueQuery)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create campaign_queue table: %v", err)
+	}
+
 	// For storing system-wide settings (Kill Switch)
 	systemSettingsQuery := `
 	CREATE TABLE IF NOT EXISTS system_settings (

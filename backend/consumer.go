@@ -57,11 +57,11 @@ func emailWorker(workerId int, userID int, ch chan types.Recipient, wg *sync.Wai
 		// Update email Status
 		if err != nil {
 			fmt.Printf("Worker: %d Error during sending email for %s: %v\n", workerId, recipient.Email, err)
-			store.UpdateEmailStatus(userID, recipient.Email, "failed")
+			store.UpdateQueueEmailStatus(camp.ID, recipient.Email, "failed")
 			continue
 		}
 		// Update the email Status function
-		err = store.UpdateEmailStatus(userID, recipient.Email, "sent")
+		err = store.UpdateQueueEmailStatus(camp.ID, recipient.Email, "sent")
 		if err != nil {
 			fmt.Printf("Worker: %d Error during updating email status for %s: %v\n", workerId, recipient.Email, err)
 			continue

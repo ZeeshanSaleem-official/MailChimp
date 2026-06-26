@@ -73,3 +73,40 @@ func fetchRecipientsFromDB(userID int, ch chan types.Recipient, db *sql.DB, seg 
 	fmt.Printf("All emails loaded into the channel successfully!!\n")
 	return nil
 }
+
+// fetch pending items from the persistent campaign queue
+func fetchPendingFromQueue(campaignID int, userID int, ch chan types.Recipient, db *sql.DB) error {
+	defer close(ch)
+
+	query := `
+		SELECT q.recipient_email, r.name 
+		FROM campaign_queue q
+		JOIN recipients r ON q.recipient_email = r.email AND r.user_id = $2
+		WHERE q.campaign_id = $1 AND q.status = 'pending'
+	`
+
+	row, err := db.Query(query, campaignID, userID)
+	if err != nil {
+		return err
+	}
+	defer row.Close()
+
+	for row.Next() {
+		var email string
+		var name string
+
+		err = row.Scan(&email, &name)
+		if err != nil {
+			fmt.Printf("Error scanning queue row: %v\n", err)
+			continue
+		}
+
+		// Send through channel
+		ch <- types.Recipient{
+			Name:  name,
+			Email: email,
+		}
+	}
+	fmt.Printf("All pending queue items loaded into the channel successfully!!\n")
+	return nil
+}

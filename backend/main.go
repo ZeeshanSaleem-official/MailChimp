@@ -118,9 +118,18 @@ func main() {
 				continue
 			}
 			// run campaign
-			runCampaign(camp.UserID, store, db, camp, cfg.SMTP.Host, cfg.SMTP.Port, cfg.SMTP.Username, cfg.SMTP.Password) // mark the campaign to completed
-			store.UpdateCampaignStatus(camp.ID, "completed")
-			fmt.Printf("✅ Campaign '%s' completed successfully!\n", camp.Name)
+			runCampaign(camp.UserID, store, db, camp, cfg.SMTP.Host, cfg.SMTP.Port, cfg.SMTP.Username, cfg.SMTP.Password) 
+			
+			// Check if the queue is completely drained
+			pendingCount, err := store.GetPendingQueueCount(camp.ID)
+			if err == nil && pendingCount == 0 {
+				store.UpdateCampaignStatus(camp.ID, "completed")
+				fmt.Printf("✅ Campaign '%s' completed successfully!\n", camp.Name)
+			} else {
+				// Revert to pending so the scheduler picks up the remaining emails next time
+				store.UpdateCampaignStatus(camp.ID, "pending")
+				fmt.Printf("⏸️ Campaign '%s' paused mid-batch. %d emails remaining.\n", camp.Name, pendingCount)
+			}
 		}
 	})
 	fmt.Println(" Scheduler started! Waiting for the next scheduled run...")
@@ -208,9 +217,17 @@ func main() {
 func runCampaign(userID int, store storage.Storage, db *sql.DB, camp types.Campaign, smtpHost string, smtpPort int, smtpUser string, smtpPass string) {
 	cfg := config.MustLoad("local.yml")
 
+	// 1. Initialize the queue (only adds emails if they aren't already in the queue)
+	err := store.InitializeCampaignQueue(camp.ID, userID, camp.TargetSegment)
+	if err != nil {
+		fmt.Printf("Error initializing campaign queue: %v\n", err)
+		return
+	}
+
 	recipientchannel := make(chan types.Recipient)
 	go func() {
-		fetchRecipientsFromDB(userID, recipientchannel, db, camp.TargetSegment)
+		// 2. Fetch only 'pending' emails from the persistent queue
+		fetchPendingFromQueue(camp.ID, userID, recipientchannel, db)
 	}()
 
 	workerCount := 5
