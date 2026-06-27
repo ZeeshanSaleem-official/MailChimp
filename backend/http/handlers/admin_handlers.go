@@ -3,11 +3,12 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/ZeeshanSaleem-official/MailChimp/internal/storage"
 )
 
-// GetAllUsersHandler fetches all users (Admin only)
+// GetAllUsersHandler fetches paginated users (Admin only)
 func GetAllUsersHandler(store storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -15,14 +16,36 @@ func GetAllUsersHandler(store storage.Storage) http.HandlerFunc {
 			return
 		}
 
-		users, err := store.GetAllUsers()
+		pageStr := r.URL.Query().Get("page")
+		limitStr := r.URL.Query().Get("limit")
+		search := r.URL.Query().Get("search")
+
+		page := 1
+		limit := 10
+		if pageStr != "" {
+			if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+				page = p
+			}
+		}
+		if limitStr != "" {
+			if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+				limit = l
+			}
+		}
+
+		users, totalCount, err := store.GetUsersPaginated(page, limit, search)
 		if err != nil {
 			http.Error(w, "Failed to fetch users", http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(users)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"data":       users,
+			"totalCount": totalCount,
+			"page":       page,
+			"limit":      limit,
+		})
 	}
 }
 
@@ -118,7 +141,7 @@ func GetGlobalStatsHandler(store storage.Storage) http.HandlerFunc {
 	}
 }
 
-// GetGlobalLogsHandler fetches the recent activity firehose
+// GetGlobalLogsHandler fetches the paginated recent activity firehose
 func GetGlobalLogsHandler(store storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -126,14 +149,36 @@ func GetGlobalLogsHandler(store storage.Storage) http.HandlerFunc {
 			return
 		}
 
-		logs, err := store.GetGlobalEmailLogs(100) // limit to 100
+		pageStr := r.URL.Query().Get("page")
+		limitStr := r.URL.Query().Get("limit")
+		search := r.URL.Query().Get("search")
+
+		page := 1
+		limit := 100
+		if pageStr != "" {
+			if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+				page = p
+			}
+		}
+		if limitStr != "" {
+			if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+				limit = l
+			}
+		}
+
+		logs, totalCount, err := store.GetGlobalEmailLogsPaginated(page, limit, search)
 		if err != nil {
 			http.Error(w, "Failed to fetch global logs", http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(logs)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"data":       logs,
+			"totalCount": totalCount,
+			"page":       page,
+			"limit":      limit,
+		})
 	}
 }
 

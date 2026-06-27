@@ -26,10 +26,12 @@ type Storage interface {
 	UpdateUserQuota(userID int, quota int) error
 	// admin
 	GetAllUsers() ([]types.User, error)
+	GetUsersPaginated(page int, limit int, search string) ([]types.User, int, error)
 	UpdateUserStatus(userID int, status string) error
 	UpdateUserRole(userID int, role string) error
 	GetGlobalStats() (types.GlobalStats, error)
 	GetGlobalEmailLogs(limit int) ([]types.GlobalEmailLog, error)
+	GetGlobalEmailLogsPaginated(page int, limit int, search string) ([]types.GlobalEmailLog, int, error)
 	// engine controls
 	GetEngineStatus() (string, error)
 	UpdateEngineStatus(status string) error

@@ -15,9 +15,15 @@ import {
   ChevronDown,
   ChevronRight,
   ShieldAlert,
-  ShieldCheck
+  ShieldCheck,
+  Search,
+  ChevronLeft
 } from "lucide-react";
 import apiClient from "../api/axios";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell
+} from 'recharts';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -43,6 +49,15 @@ export default function AdminDashboard() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  // Pagination & Search States
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersSearch, setUsersSearch] = useState("");
+  const [totalUsersCount, setTotalUsersCount] = useState(0);
+
+  const [logsPage, setLogsPage] = useState(1);
+  const [logsSearch, setLogsSearch] = useState("");
+  const [totalLogsCount, setTotalLogsCount] = useState(0);
+
   // New state for confirming destructive/important actions
   const [confirmAction, setConfirmAction] = useState(null);
   const [confirmEngineStatus, setConfirmEngineStatus] = useState(null);
@@ -51,8 +66,9 @@ export default function AdminDashboard() {
 
   const fetchUsers = async () => {
     try {
-      const response = await apiClient.get("/api/admin/users");
-      setUsers(response.data || []);
+      const response = await apiClient.get(`/api/admin/users?page=${usersPage}&limit=10&search=${encodeURIComponent(usersSearch)}`);
+      setUsers(response.data?.data || []);
+      setTotalUsersCount(response.data?.totalCount || 0);
       setError(null);
     } catch (err) {
       console.error("Fetch error:", err);
@@ -66,11 +82,12 @@ export default function AdminDashboard() {
     try {
       const [statsRes, logsRes, engineRes] = await Promise.all([
         apiClient.get("/api/admin/stats"),
-        apiClient.get("/api/admin/logs"),
+        apiClient.get(`/api/admin/logs?page=${logsPage}&limit=100&search=${encodeURIComponent(logsSearch)}`),
         apiClient.get("/api/admin/engine")
       ]);
       setGlobalStats(statsRes.data || { total_users: 0, global_queue: 0, total_sent: 0, total_failures: 0 });
-      setGlobalLogs(logsRes.data || []);
+      setGlobalLogs(logsRes.data?.data || []);
+      setTotalLogsCount(logsRes.data?.totalCount || 0);
       setEngineStatus(engineRes.data?.status || "running");
       setError(null);
     } catch (err) {
@@ -103,9 +120,9 @@ export default function AdminDashboard() {
     const interval = setInterval(() => {
       if (activeTab === "users") fetchUsers();
       else fetchGlobalStats();
-    }, 5000);
+    }, 10000); // 10s is safer for DB load
     return () => clearInterval(interval);
-  }, [activeTab]);
+  }, [activeTab, usersPage, usersSearch, logsPage, logsSearch]);
 
   const toggleUserStatus = async (userId, currentStatus) => {
     const newStatus = currentStatus === "active" ? "suspended" : "active";
@@ -318,10 +335,23 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-200">
+                  <div className="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <h3 className="text-base font-medium text-gray-900">
-                      Users
+                      Users ({totalUsersCount})
                     </h3>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                      <input
+                        type="text"
+                        placeholder="Search by email..."
+                        value={usersSearch}
+                        onChange={(e) => {
+                          setUsersSearch(e.target.value);
+                          setUsersPage(1); // Reset to page 1 on search
+                        }}
+                        className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 w-full sm:w-64"
+                      />
+                    </div>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
@@ -398,6 +428,28 @@ export default function AdminDashboard() {
                       </tbody>
                     </table>
                   </div>
+                  {/* Pagination Controls */}
+                  <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                    <span className="text-sm text-gray-500">
+                      Showing {users.length > 0 ? (usersPage - 1) * 10 + 1 : 0} to {Math.min(usersPage * 10, totalUsersCount)} of {totalUsersCount} entries
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        disabled={usersPage === 1}
+                        onClick={() => setUsersPage(usersPage - 1)}
+                        className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-600 disabled:opacity-50 hover:bg-gray-50"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        disabled={usersPage * 10 >= totalUsersCount}
+                        onClick={() => setUsersPage(usersPage + 1)}
+                        className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-600 disabled:opacity-50 hover:bg-gray-50"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </>
             )}
@@ -451,14 +503,61 @@ export default function AdminDashboard() {
                   <StatCard title="System Failures" value={globalStats.total_failures} icon={<AlertCircle size={20} className="text-red-500" />} />
                 </div>
 
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6 p-6">
+                  <h3 className="text-base font-medium text-gray-900 mb-4 flex items-center gap-2">
+                    <Activity className="text-blue-600" size={18} />
+                    Platform Activity Analytics
+                  </h3>
+                  <div className="h-64 w-full">
+                    {globalLogs.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={
+                          // Create a time-series grouping of logs by minute/hour for visual analytics
+                          Object.values(globalLogs.reduce((acc, log) => {
+                            const time = new Date(log.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            if (!acc[time]) acc[time] = { time, sent: 0, failed: 0 };
+                            if (log.status === "sent") acc[time].sent++;
+                            else acc[time].failed++;
+                            return acc;
+                          }, {})).reverse()
+                        }>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                          <XAxis dataKey="time" stroke="#9CA3AF" fontSize={12} tickLine={false} />
+                          <YAxis stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
+                          <RechartsTooltip 
+                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                          />
+                          <Legend iconType="circle" />
+                          <Line type="monotone" dataKey="sent" stroke="#10B981" strokeWidth={3} dot={false} activeDot={{ r: 6 }} name="Emails Sent" />
+                          <Line type="monotone" dataKey="failed" stroke="#EF4444" strokeWidth={3} dot={false} activeDot={{ r: 6 }} name="Failures" />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-gray-400 text-sm">No activity data to chart</div>
+                    )}
+                  </div>
+                </div>
+
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
+                  <div className="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gray-50/50">
                     <div>
                       <h3 className="text-base font-medium text-gray-900 flex items-center gap-2">
-                        <Activity className="text-blue-600" size={18} />
-                        Live Global Activity Stream
+                        <Server className="text-purple-600" size={18} />
+                        Global Logs Database ({totalLogsCount})
                       </h3>
-                      <p className="text-xs text-gray-500 mt-1">Showing the last 100 platform dispatches in real-time.</p>
+                    </div>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                      <input
+                        type="text"
+                        placeholder="Search by sender or recipient..."
+                        value={logsSearch}
+                        onChange={(e) => {
+                          setLogsSearch(e.target.value);
+                          setLogsPage(1); // Reset to page 1 on search
+                        }}
+                        className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 w-full sm:w-72"
+                      />
                     </div>
                   </div>
 
@@ -574,6 +673,28 @@ export default function AdminDashboard() {
                         })}
                       </tbody>
                     </table>
+                  </div>
+                  {/* Logs Pagination */}
+                  <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50/50">
+                    <span className="text-sm text-gray-500">
+                      Showing {globalLogs.length > 0 ? (logsPage - 1) * 100 + 1 : 0} to {Math.min(logsPage * 100, totalLogsCount)} of {totalLogsCount} logs
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        disabled={logsPage === 1}
+                        onClick={() => setLogsPage(logsPage - 1)}
+                        className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-600 disabled:opacity-50 hover:bg-gray-50 bg-white"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        disabled={logsPage * 100 >= totalLogsCount}
+                        onClick={() => setLogsPage(logsPage + 1)}
+                        className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-600 disabled:opacity-50 hover:bg-gray-50 bg-white"
+                      >
+                        Next
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

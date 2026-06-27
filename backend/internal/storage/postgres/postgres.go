@@ -341,6 +341,89 @@ func (p *PostgresStore) GetGlobalEmailLogs(limit int) ([]types.GlobalEmailLog, e
 	return logs, nil
 }
 
+// GetGlobalEmailLogsPaginated fetches paginated activity feed across the entire platform
+func (p *PostgresStore) GetGlobalEmailLogsPaginated(page int, limit int, search string) ([]types.GlobalEmailLog, int, error) {
+	offset := (page - 1) * limit
+	var totalCount int
+	var logs []types.GlobalEmailLog
+
+	countQuery := `
+		SELECT COUNT(*) 
+		FROM email_logs e
+		JOIN users u ON e.user_id = u.id
+		WHERE ($1 = '' OR e.recipient_email ILIKE '%' || $1 || '%' OR u.email ILIKE '%' || $1 || '%')
+	`
+	err := p.db.QueryRow(countQuery, search).Scan(&totalCount)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	query := `
+		SELECT e.id, u.email as sender_email, e.campaign_name, e.recipient_email, e.status, e.sent_at 
+		FROM email_logs e 
+		JOIN users u ON e.user_id = u.id 
+		WHERE ($1 = '' OR e.recipient_email ILIKE '%' || $1 || '%' OR u.email ILIKE '%' || $1 || '%')
+		ORDER BY e.sent_at DESC 
+		LIMIT $2 OFFSET $3
+	`
+	rows, err := p.db.Query(query, search, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var l types.GlobalEmailLog
+		err := rows.Scan(&l.ID, &l.SenderEmail, &l.CampaignName, &l.RecipientEmail, &l.Status, &l.SentAt)
+		if err == nil {
+			logs = append(logs, l)
+		}
+	}
+	return logs, totalCount, nil
+}
+
+// GetUsersPaginated fetches users for the Admin Dashboard with pagination and search
+func (p *PostgresStore) GetUsersPaginated(page int, limit int, search string) ([]types.User, int, error) {
+	offset := (page - 1) * limit
+	var totalCount int
+	var users []types.User
+
+	countQuery := `SELECT COUNT(*) FROM users WHERE ($1 = '' OR email ILIKE '%' || $1 || '%')`
+	err := p.db.QueryRow(countQuery, search).Scan(&totalCount)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	query := `
+		SELECT id, email, userRole, status, daily_quota, created_at 
+		FROM users 
+		WHERE ($1 = '' OR email ILIKE '%' || $1 || '%')
+		ORDER BY id ASC 
+		LIMIT $2 OFFSET $3
+	`
+	rows, err := p.db.Query(query, search, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var u types.User
+		var status sql.NullString
+		err := rows.Scan(&u.ID, &u.Email, &u.Role, &status, &u.DailyQuota, &u.CreatedAt)
+		if err != nil {
+			continue
+		}
+		if status.Valid {
+			u.Status = status.String
+		} else {
+			u.Status = "active"
+		}
+		users = append(users, u)
+	}
+	return users, totalCount, nil
+}
+
 // GetEngineStatus fetches the global kill switch status
 func (p *PostgresStore) GetEngineStatus() (string, error) {
 	query := `SELECT setting_value FROM system_settings WHERE setting_key = 'engine_status'`
